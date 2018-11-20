@@ -13,15 +13,16 @@ shots = pygame.sprite.Group()
 tanks = pygame.sprite.Group()
 
 
-def load_image(filename):
+def load_image(filename,x=None,y=None):
     """Load an image from file
-        takes: an image filename
+        takes: an image filename and desired dimensions
         returns: a converted image object
-        assumes: file is in local subdirectory data/
+        assumes: file is in local subdirectory assets/
         image has transparency
         """
-    image = pygame.image.load(os.path.join("assets", filename))
-    return image.convert_alpha()
+    image = pygame.image.load(os.path.join("assets", filename)).convert_alpha()
+    if x and y: image = pygame.transform.smoothscale(image,(x,y))
+    return image
 
 
 def rotate_ip(self, angle):
@@ -43,18 +44,18 @@ class Shot(pygame.sprite.Sprite):
     
     def __init__(self, position, heading):
         pygame.sprite.Sprite.__init__(self)
-        self.base_image = load_image('bullet.png')
+        self.base_image = load_image('bullet.png',15,15)
         self.image = self.base_image
         self.area = pygame.display.get_surface().get_rect()
         self.rect = self.image.get_rect(center=position)
         self.heading = heading
-        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
-        self.velocity = heading * 20
-        self.rect.move_ip(self.velocity.x, self.velocity.y)
+        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+        self.velocity = heading * 2
+        self.rect.move_ip(self.velocity)
     
     def update(self):
         """ update shot position """
-        self.rect.move_ip(self.velocity.x, self.velocity.y)
+        self.rect.move_ip(self.velocity)
         if not self.area.contains(self.rect):
             self.kill()
 
@@ -64,14 +65,14 @@ class Tank(pygame.sprite.Sprite):
     
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.base_image = load_image('greenTank.png')
+        self.base_image = load_image('greenTank.png',75,75)
         self.image = self.base_image
         self.area = pygame.display.get_surface().get_rect()
         start_x = self.area.width/2
         start_y = self.area.height/2
         self.rect = self.image.get_rect(center=(start_x, start_y))
         self.velocity = pygame.math.Vector2()
-        self.heading = pygame.math.Vector2(0, -1)
+        self.heading = pygame.math.Vector2(0, -10)
         self.cooldown = 0
     
     def update(self):
@@ -81,23 +82,20 @@ class Tank(pygame.sprite.Sprite):
         if self.cooldown > 0:
             self.cooldown -= 1
         
-        # read keyoard and joystick input
+        # read keyoard input
         if key[K_LEFT]:
             self.heading.rotate_ip(-5)
-            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
+            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
         if key[K_RIGHT]:
             self.heading.rotate_ip(5)
-            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
+            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
         if key[K_UP]:
-            self.velocity = self.velocity + (self.heading/5)
+            self.rect.move_ip(self.heading)
         if key[K_SPACE] and self.cooldown == 0:
             shot = Shot(self.rect.center, self.heading)
             shots.add(shot)
             all_sprites.add(shot)
             self.cooldown = 5
-        
-        # move ship
-        self.rect.move_ip(self.velocity.x, self.velocity.y)
         
         # wrap screen
         if self.rect.x + self.rect.width < 0:
