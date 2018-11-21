@@ -62,8 +62,8 @@ class Shot(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=position)
         self.radius = 6
         self.heading = heading
-        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
-        self.velocity = heading * 3
+        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
+        self.velocity = heading
         self.rect.move_ip(self.velocity)
     
     def update(self):
@@ -82,7 +82,7 @@ class Turret(pygame.sprite.Sprite):
         self.base_image = load_image(image_file,50,50)
         self.image = self.base_image
         self.rect = self.image.get_rect(center=tank.rect.center)
-        self.heading = pygame.math.Vector2(0, -5)
+        self.heading = pygame.math.Vector2(0, -20)
 
 
 class Tank(pygame.sprite.Sprite):
@@ -106,7 +106,7 @@ class Tank(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=position)
         self.radius = 35
         self.velocity = pygame.math.Vector2()
-        self.heading = pygame.math.Vector2(0, -5)
+        self.heading = pygame.math.Vector2(0, -10)
         self.turret = Turret(self,colour)
         self.cooldown = 0
         self.moved = False
@@ -124,12 +124,12 @@ class Tank(pygame.sprite.Sprite):
     def forward(self):
         if self.moved: return False
         self.moved = True
-        self.rect.move_ip(self.heading)
+        self.rect.move_ip(self.heading * 0.75)
         if pygame.sprite.collide_mask(self, self.enemy):
-            self.rect.move_ip(-self.heading)
+            self.rect.move_ip(-self.heading * 0.75)
             return False
         if pygame.sprite.spritecollideany(self, enviro_sprites, collided = pygame.sprite.collide_mask):
-            self.rect.move_ip(-self.heading)
+            self.rect.move_ip(-self.heading * 0.75)
             return False
         return True
     
@@ -137,27 +137,27 @@ class Tank(pygame.sprite.Sprite):
         if self.turned: return
         self.turned = True
         self.heading.rotate_ip(-5)
-        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
+        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
         self.mask = pygame.mask.from_surface(self.image)
     
     def turn_right(self):
         if self.turned: return
         self.turned = True
         self.heading.rotate_ip(5)
-        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
+        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
         self.mask = pygame.mask.from_surface(self.image)
     
     def rotate_left(self):
         if self.rotated: return
         self.rotated = True
         self.turret.heading.rotate_ip(-5)
-        self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -5)))
+        self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -1)))
         
     def rotate_right(self):
         if self.rotated: return
         self.rotated = True
         self.turret.heading.rotate_ip(5)
-        self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -5)))
+        self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -1)))
 
     def fire(self):
         if self.fired: return
