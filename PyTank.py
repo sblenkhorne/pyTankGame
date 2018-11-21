@@ -9,8 +9,10 @@ from pygame.locals import *
 
 
 all_sprites = pygame.sprite.LayeredUpdates()
-shots = pygame.sprite.Group()
-tanks = pygame.sprite.Group()
+green_shots = pygame.sprite.Group()
+green_tanks = pygame.sprite.Group()
+orange_shots = pygame.sprite.Group()
+orange_tanks = pygame.sprite.Group()
 
 
 def load_image(filename,x=None,y=None):
@@ -64,6 +66,10 @@ class Turret(pygame.sprite.Sprite):
 
     def __init__(self,tank,colour):
         pygame.sprite.Sprite.__init__(self)
+        self.colour = colour
+        all_sprites.add(self, layer = 1)
+        if colour == 'green': green_tanks.add(self)
+        else: orange_tanks.add(self)
         image_file = colour + 'Turret.png'
         self.base_image = load_image(image_file,50,50)
         self.image = self.base_image
@@ -83,17 +89,31 @@ class Turret(pygame.sprite.Sprite):
             self.cooldown -= 1
     
         # read keyoard input
-        if key[K_COMMA]:
-            self.heading.rotate_ip(-5)
-            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-        if key[K_PERIOD]:
-            self.heading.rotate_ip(5)
-            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-        if key[K_SPACE] and self.cooldown == 0:
-            shot = Shot(self.rect.center, self.heading)
-            shots.add(shot)
-            all_sprites.add(shot)
-            self.cooldown = 5
+        if self.colour == 'green':
+            if key[K_q]:
+                self.heading.rotate_ip(-5)
+                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+            if key[K_e]:
+                self.heading.rotate_ip(5)
+                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+            if key[K_s] and self.cooldown == 0:
+                shot = Shot(self.rect.center, self.heading)
+                green_shots.add(shot)
+                all_sprites.add(shot)
+                self.cooldown = 5
+        else:
+            if key[K_u]:
+                self.heading.rotate_ip(-5)
+                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+            if key[K_o]:
+                self.heading.rotate_ip(5)
+                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+            if key[K_k] and self.cooldown == 0:
+                shot = Shot(self.rect.center, self.heading)
+                orange_shots.add(shot)
+                all_sprites.add(shot)
+                self.cooldown = 5
+
 
         # move with tank
         self.rect.center = self.tank.rect.center
@@ -114,6 +134,10 @@ class Tank(pygame.sprite.Sprite):
     def __init__(self,colour = 'green',position = (600,400)):
         pygame.sprite.Sprite.__init__(self)
         if colour != 'green' and colour != 'orange': colour = 'green'
+        self.colour = colour
+        all_sprites.add(self, layer = 0)
+        if colour == 'green': green_tanks.add(self)
+        else: orange_tanks.add(self)
         image_file = colour + 'Tank.png'
         self.base_image = load_image(image_file,75,75)
         self.image = self.base_image
@@ -122,22 +146,34 @@ class Tank(pygame.sprite.Sprite):
         self.velocity = pygame.math.Vector2()
         self.heading = pygame.math.Vector2(0, -10)
         self.turret = Turret(self,colour)
-        all_sprites.add(self.turret, layer = 1)
-        self.turret.add(tanks)
+    
+    def kill(self):
+        self.turret.kill()
+        pygame.sprite.Sprite.kill(self)
     
     def update(self):
         """ update tank heading, speed, and position """
         key = pygame.key.get_pressed()
 
         # read keyoard input
-        if key[K_LEFT]:
-            self.heading.rotate_ip(-5)
-            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-        if key[K_RIGHT]:
-            self.heading.rotate_ip(5)
-            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-        if key[K_UP]:
-            self.rect.move_ip(self.heading)
+        if self.colour == 'green':
+            if key[K_a]:
+                self.heading.rotate_ip(-5)
+                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+            if key[K_d]:
+                self.heading.rotate_ip(5)
+                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+            if key[K_w]:
+                self.rect.move_ip(self.heading)
+        else:
+            if key[K_j]:
+                self.heading.rotate_ip(-5)
+                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+            if key[K_l]:
+                self.heading.rotate_ip(5)
+                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+            if key[K_i]:
+                self.rect.move_ip(self.heading)
 
         # wrap screen
         if self.rect.x + self.rect.width < 0:
@@ -161,12 +197,8 @@ def main():
     background = load_image('arena.png')
     screen.blit(background, (0, 0))
     
-    tank = Tank('green',(100,100))
-    all_sprites.add(tank, layer = 0)
-    tank.add(tanks)
-    tank = Tank('orange',(1100,700))
-    all_sprites.add(tank, layer = 0)
-    tank.add(tanks)
+    Tank('green',(100,100))
+    Tank('orange',(1100,700))
     
     # game loop
     while True:
@@ -176,6 +208,8 @@ def main():
                 return
 
         all_sprites.update()
+        pygame.sprite.groupcollide(green_shots, orange_tanks, True, True)
+        pygame.sprite.groupcollide(orange_shots, green_tanks, True, True)
 
         
         all_sprites.clear(screen, background)
