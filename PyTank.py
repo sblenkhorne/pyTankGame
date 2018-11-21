@@ -91,6 +91,7 @@ class Tank(pygame.sprite.Sprite):
         self.image = self.base_image
         self.area = pygame.display.get_surface().get_rect()
         self.rect = self.image.get_rect(center=position)
+        self.radius = 35
         self.velocity = pygame.math.Vector2()
         self.heading = pygame.math.Vector2(0, -5)
         self.turret = Turret(self,colour)
@@ -108,6 +109,8 @@ class Tank(pygame.sprite.Sprite):
         if self.moved: return
         self.moved = True
         self.rect.move_ip(self.heading)
+        if pygame.sprite.groupcollide(green_tanks, orange_tanks, False, False, collided = pygame.sprite.collide_circle):
+            self.rect.move_ip(self.heading*-2.5)
     
     def turn_left(self):
         if self.turned: return
@@ -144,39 +147,16 @@ class Tank(pygame.sprite.Sprite):
     
     def update(self):
         """ update tank heading, speed, and position """
-        key = pygame.key.get_pressed()
+        
         if self.cooldown > 0:
             self.cooldown -= 1
 
-        # read keyoard input
+        # get control input
         if self.colour == 'green':
             green_control.action(self)
-#            if key[K_a]:
-#                self.turn_left()
-#            if key[K_d]:
-#                self.turn_right()
-#            if key[K_w]:
-#                self.forward()
-#            if key[K_q]:
-#                self.rotate_left()
-#            if key[K_e]:
-#                self.rotate_right()
-#            if key[K_s] and self.cooldown == 0:
-#                self.fire()
         else:
-            if key[K_j]:
-                self.turn_left()
-            if key[K_l]:
-                self.turn_right()
-            if key[K_i]:
-                self.forward()
-            if key[K_u]:
-                self.rotate_left()
-            if key[K_o]:
-                self.rotate_right()
-            if key[K_k] and self.cooldown == 0:
-                self.fire()
-
+            orange_control.action(self)
+            
         # wrap screen
         if self.rect.x + self.rect.width < 0:
             self.rect.x = self.area.width
@@ -220,8 +200,8 @@ def main():
                 return
 
         all_sprites.update()
-        pygame.sprite.groupcollide(green_shots, orange_tanks, True, True)
-        pygame.sprite.groupcollide(orange_shots, green_tanks, True, True)
+        pygame.sprite.groupcollide(green_shots, orange_tanks, True, True, collided = pygame.sprite.collide_circle)
+        pygame.sprite.groupcollide(orange_shots, green_tanks, True, True, collided = pygame.sprite.collide_circle)
 
         
         all_sprites.clear(screen, background)
