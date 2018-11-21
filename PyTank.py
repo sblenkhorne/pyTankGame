@@ -111,11 +111,13 @@ class Tank(pygame.sprite.Sprite):
         pygame.sprite.Sprite.kill(self)
     
     def forward(self):
-        if self.moved: return
+        if self.moved: return False
         self.moved = True
         self.rect.move_ip(self.heading)
         if pygame.sprite.groupcollide(green_tanks, orange_tanks, False, False, collided = pygame.sprite.collide_circle):
             self.rect.move_ip(self.heading*-2.5)
+            return False
+        return True
     
     def turn_left(self):
         if self.turned: return
