@@ -13,6 +13,7 @@ green_shots = pygame.sprite.Group()
 green_tanks = pygame.sprite.Group()
 orange_shots = pygame.sprite.Group()
 orange_tanks = pygame.sprite.Group()
+enviro_sprites = pygame.sprite.Group()
 
 
 def load_image(filename,x=None,y=None):
@@ -39,6 +40,17 @@ def rotate_ip(self, angle):
     return new_image
 
 
+class Wall(pygame.sprite.Sprite):
+    """Class to represent opstacles"""
+
+    def __init__(self,position,orientation):
+        pygame.sprite.Sprite.__init__(self)
+        all_sprites.add(self, layer = 0)
+        enviro_sprites.add(self)
+        self.image = load_image('wall.png',200,20)
+        self.image = pygame.transform.rotate(self.image,orientation)
+        self.rect = self.image.get_rect(topleft=position)
+
 
 class Shot(pygame.sprite.Sprite):
     """Class to represent and control projectiles"""
@@ -57,8 +69,7 @@ class Shot(pygame.sprite.Sprite):
     def update(self):
         """ update shot position """
         self.rect.move_ip(self.velocity)
-        if not self.area.contains(self.rect):
-            self.kill()
+        if pygame.sprite.spritecollideany(self, enviro_sprites) or not self.area.contains(self.rect): self.kill()
 
 
 class Turret(pygame.sprite.Sprite):
@@ -116,6 +127,9 @@ class Tank(pygame.sprite.Sprite):
         self.rect.move_ip(self.heading)
         if pygame.sprite.groupcollide(green_tanks, orange_tanks, False, False, collided = pygame.sprite.collide_circle):
             self.rect.move_ip(self.heading*-2.5)
+            return False
+        if pygame.sprite.spritecollideany(self, enviro_sprites):
+            self.rect.move_ip(-self.heading)
             return False
         return True
     
@@ -181,6 +195,30 @@ class Tank(pygame.sprite.Sprite):
 
 
 
+def set_up():
+    Tank('green',(100,100))
+    Tank('orange',(1100,700))
+    Wall((0,0),0)
+    Wall((200,0),0)
+    Wall((400,0),0)
+    Wall((800,0),0)
+    Wall((1000,0),0)
+    Wall((0,780),0)
+    Wall((200,780),0)
+    Wall((400,780),0)
+    Wall((800,780),0)
+    Wall((1000,780),0)
+    Wall((0,0),90)
+    Wall((0,400),90)
+    Wall((0,600),90)
+    Wall((1180,0),90)
+    Wall((1180,400),90)
+    Wall((1180,600),90)
+    for y in range(190,700,200):
+        for x in range(190,1100,200):
+            r = random.choice([0,90,180,270])
+            Wall((x,y),r)
+
 def main():
     """run the game"""
     # initialization and setup
@@ -191,9 +229,8 @@ def main():
     
     background = load_image('arena.png')
     screen.blit(background, (0, 0))
-    
-    Tank('green',(100,100))
-    Tank('orange',(1100,700))
+
+    set_up()
     
     # game loop
     while True:
