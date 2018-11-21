@@ -10,9 +10,7 @@ from pygame.locals import *
 
 all_sprites = pygame.sprite.LayeredUpdates()
 green_shots = pygame.sprite.Group()
-green_tanks = pygame.sprite.Group()
 orange_shots = pygame.sprite.Group()
-orange_tanks = pygame.sprite.Group()
 enviro_sprites = pygame.sprite.Group()
 
 
@@ -41,7 +39,7 @@ def rotate_ip(self, angle):
 
 
 class Wall(pygame.sprite.Sprite):
-    """Class to represent opstacles"""
+    """Class to represent obstacles"""
 
     def __init__(self,position,orientation):
         pygame.sprite.Sprite.__init__(self)
@@ -49,6 +47,7 @@ class Wall(pygame.sprite.Sprite):
         enviro_sprites.add(self)
         self.image = load_image('wall.png',200,20)
         self.image = pygame.transform.rotate(self.image,orientation)
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect(topleft=position)
 
 
@@ -61,9 +60,10 @@ class Shot(pygame.sprite.Sprite):
         self.image = self.base_image
         self.area = pygame.display.get_surface().get_rect()
         self.rect = self.image.get_rect(center=position)
+        self.radius = 6
         self.heading = heading
         self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
-        self.velocity = heading*2.5
+        self.velocity = heading * 3
         self.rect.move_ip(self.velocity)
     
     def update(self):
@@ -78,8 +78,6 @@ class Turret(pygame.sprite.Sprite):
     def __init__(self,tank,colour):
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 1)
-        if colour == 'green': green_tanks.add(self)
-        else: orange_tanks.add(self)
         image_file = colour + 'Turret.png'
         self.base_image = load_image(image_file,50,50)
         self.image = self.base_image
@@ -95,16 +93,15 @@ class Tank(pygame.sprite.Sprite):
         if colour != 'green' and colour != 'orange': colour = 'green'
         all_sprites.add(self, layer = 0)
         if colour == 'green':
-            green_tanks.add(self)
             self.control = green_control
             self.shot_group = green_shots
         else:
-            orange_tanks.add(self)
             self.control = orange_control
             self.shot_group = orange_shots
         image_file = colour + 'Tank.png'
         self.base_image = load_image(image_file,75,75)
         self.image = self.base_image
+        self.mask = pygame.mask.from_surface(self.image)
         self.area = pygame.display.get_surface().get_rect()
         self.rect = self.image.get_rect(center=position)
         self.radius = 35
@@ -116,6 +113,9 @@ class Tank(pygame.sprite.Sprite):
         self.turned = False
         self.rotated = False
         self.fired = False
+        
+    def set_enemy(self, tank):
+        self.enemy = tank
     
     def kill(self):
         self.turret.kill()
@@ -125,10 +125,10 @@ class Tank(pygame.sprite.Sprite):
         if self.moved: return False
         self.moved = True
         self.rect.move_ip(self.heading)
-        if pygame.sprite.groupcollide(green_tanks, orange_tanks, False, False, collided = pygame.sprite.collide_circle):
-            self.rect.move_ip(self.heading*-2.5)
+        if pygame.sprite.collide_mask(self, self.enemy):
+            self.rect.move_ip(-self.heading)
             return False
-        if pygame.sprite.spritecollideany(self, enviro_sprites):
+        if pygame.sprite.spritecollideany(self, enviro_sprites, collided = pygame.sprite.collide_mask):
             self.rect.move_ip(-self.heading)
             return False
         return True
@@ -138,12 +138,14 @@ class Tank(pygame.sprite.Sprite):
         self.turned = True
         self.heading.rotate_ip(-5)
         self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
+        self.mask = pygame.mask.from_surface(self.image)
     
     def turn_right(self):
         if self.turned: return
         self.turned = True
         self.heading.rotate_ip(5)
         self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
+        self.mask = pygame.mask.from_surface(self.image)
     
     def rotate_left(self):
         if self.rotated: return
@@ -163,10 +165,10 @@ class Tank(pygame.sprite.Sprite):
         shot = Shot(self.rect.center, self.turret.heading)
         self.shot_group.add(shot)
         all_sprites.add(shot)
-        self.cooldown = 5
+        self.cooldown = 15
     
     def update(self):
-        """ update tank heading, speed, and position """
+        """ update tank heading and position """
         
         if self.cooldown > 0:
             self.cooldown -= 1
@@ -195,9 +197,7 @@ class Tank(pygame.sprite.Sprite):
 
 
 
-def set_up():
-    Tank('green',(100,100))
-    Tank('orange',(1100,700))
+def set_up_walls():
     Wall((0,0),0)
     Wall((200,0),0)
     Wall((400,0),0)
@@ -230,7 +230,11 @@ def main():
     background = load_image('arena.png')
     screen.blit(background, (0, 0))
 
-    set_up()
+    set_up_walls()
+    greenT = Tank('green',(100,100))
+    orangeT = Tank('orange',(1100,700))
+    greenT.set_enemy(orangeT)
+    orangeT.set_enemy(greenT)
     
     # game loop
     while True:
@@ -240,16 +244,16 @@ def main():
                 return
 
         all_sprites.update()
-        pygame.sprite.groupcollide(green_shots, orange_tanks, True, True, collided = pygame.sprite.collide_circle)
-        pygame.sprite.groupcollide(orange_shots, green_tanks, True, True, collided = pygame.sprite.collide_circle)
+        if pygame.sprite.spritecollideany(greenT, orange_shots, collided = pygame.sprite.collide_circle): greenT.kill()
+        if pygame.sprite.spritecollideany(orangeT, green_shots, collided = pygame.sprite.collide_circle): orangeT.kill()
 
         
         all_sprites.clear(screen, background)
         all_sprites.draw(screen)
         pygame.display.flip()
         frame_time = pygame.time.get_ticks() - start_time
-        if frame_time < 15:
-            pygame.time.delay(15-frame_time)
+        if frame_time < 25:
+            pygame.time.delay(25-frame_time)
 
 
 if __name__ == '__main__': main()
