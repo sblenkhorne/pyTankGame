@@ -8,7 +8,7 @@ import pygame, os, random
 from pygame.locals import *
 
 
-all_sprites = pygame.sprite.Group()
+all_sprites = pygame.sprite.LayeredUpdates()
 shots = pygame.sprite.Group()
 tanks = pygame.sprite.Group()
 
@@ -59,6 +59,53 @@ class Shot(pygame.sprite.Sprite):
         if not self.area.contains(self.rect):
             self.kill()
 
+class Turret(pygame.sprite.Sprite):
+    """Class to represent and control gun turrets"""
+
+    def __init__(self,tank):
+        pygame.sprite.Sprite.__init__(self)
+        self.base_image = load_image('greenTurret.png',50,50)
+        self.image = self.base_image
+        self.area = pygame.display.get_surface().get_rect()
+        start_x = tank.rect.center[0]
+        start_y = tank.rect.center[1]
+        self.tank = tank
+        self.rect = self.image.get_rect(center=(start_x, start_y))
+        self.heading = pygame.math.Vector2(0, -10)
+        self.cooldown = 0
+
+    def update(self):
+        """ update tank heading, speed, and position """
+        key = pygame.key.get_pressed()
+        
+        if self.cooldown > 0:
+            self.cooldown -= 1
+    
+        # read keyoard input
+        if key[K_COMMA]:
+            self.heading.rotate_ip(-5)
+            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+        if key[K_PERIOD]:
+            self.heading.rotate_ip(5)
+            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+        if key[K_SPACE] and self.cooldown == 0:
+            shot = Shot(self.rect.center, self.heading)
+            shots.add(shot)
+            all_sprites.add(shot)
+            self.cooldown = 5
+
+        # move with tank
+        self.rect.center = self.tank.rect.center
+
+        # wrap screen
+        if self.rect.x + self.rect.width < 0:
+            self.rect.x = self.area.width
+        if self.rect.y + self.rect.height < 0:
+            self.rect.y = self.area.height
+        if self.rect.x > self.area.width:
+            self.rect.x = -self.rect.width
+        if self.rect.y > self.area.height:
+            self.rect.y = -self.rect.height
 
 class Tank(pygame.sprite.Sprite):
     """Class to represent and control tanks"""
@@ -73,15 +120,15 @@ class Tank(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(start_x, start_y))
         self.velocity = pygame.math.Vector2()
         self.heading = pygame.math.Vector2(0, -10)
-        self.cooldown = 0
+        #self.cooldown = 0
+        self.turret = Turret(self)
+        all_sprites.add(self.turret, layer = 1)
+        self.turret.add(tanks)
     
     def update(self):
-        """ update ship heading, speed, and position """
+        """ update tank heading, speed, and position """
         key = pygame.key.get_pressed()
-        
-        if self.cooldown > 0:
-            self.cooldown -= 1
-        
+
         # read keyoard input
         if key[K_LEFT]:
             self.heading.rotate_ip(-5)
@@ -91,12 +138,7 @@ class Tank(pygame.sprite.Sprite):
             self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
         if key[K_UP]:
             self.rect.move_ip(self.heading)
-        if key[K_SPACE] and self.cooldown == 0:
-            shot = Shot(self.rect.center, self.heading)
-            shots.add(shot)
-            all_sprites.add(shot)
-            self.cooldown = 5
-        
+
         # wrap screen
         if self.rect.x + self.rect.width < 0:
             self.rect.x = self.area.width
@@ -120,7 +162,7 @@ def main():
     screen.blit(background, (0, 0))
     
     tank = Tank()
-    tank.add(all_sprites)
+    all_sprites.add(tank, layer = 0)
     tank.add(tanks)
     
     # game loop
