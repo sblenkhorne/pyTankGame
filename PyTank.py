@@ -4,7 +4,7 @@
 # November 2018
 
 
-import pygame, os, random
+import pygame, os, random, green_control, orange_control
 from pygame.locals import *
 
 
@@ -40,7 +40,6 @@ def rotate_ip(self, angle):
 
 
 
-
 class Shot(pygame.sprite.Sprite):
     """Class to represent and control projectiles"""
     
@@ -51,8 +50,8 @@ class Shot(pygame.sprite.Sprite):
         self.area = pygame.display.get_surface().get_rect()
         self.rect = self.image.get_rect(center=position)
         self.heading = heading
-        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-        self.velocity = heading * 2
+        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
+        self.velocity = heading*2.5
         self.rect.move_ip(self.velocity)
     
     def update(self):
@@ -61,72 +60,21 @@ class Shot(pygame.sprite.Sprite):
         if not self.area.contains(self.rect):
             self.kill()
 
+
 class Turret(pygame.sprite.Sprite):
-    """Class to represent and control gun turrets"""
+    """Class to represent gun turrets"""
 
     def __init__(self,tank,colour):
         pygame.sprite.Sprite.__init__(self)
-        self.colour = colour
         all_sprites.add(self, layer = 1)
         if colour == 'green': green_tanks.add(self)
         else: orange_tanks.add(self)
         image_file = colour + 'Turret.png'
         self.base_image = load_image(image_file,50,50)
         self.image = self.base_image
-        self.area = pygame.display.get_surface().get_rect()
-        start_x = tank.rect.center[0]
-        start_y = tank.rect.center[1]
-        self.tank = tank
-        self.rect = self.image.get_rect(center=(start_x, start_y))
-        self.heading = pygame.math.Vector2(0, -10)
-        self.cooldown = 0
+        self.rect = self.image.get_rect(center=tank.rect.center)
+        self.heading = pygame.math.Vector2(0, -5)
 
-    def update(self):
-        """ update tank heading, speed, and position """
-        key = pygame.key.get_pressed()
-        
-        if self.cooldown > 0:
-            self.cooldown -= 1
-    
-        # read keyoard input
-        if self.colour == 'green':
-            if key[K_q]:
-                self.heading.rotate_ip(-5)
-                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-            if key[K_e]:
-                self.heading.rotate_ip(5)
-                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-            if key[K_s] and self.cooldown == 0:
-                shot = Shot(self.rect.center, self.heading)
-                green_shots.add(shot)
-                all_sprites.add(shot)
-                self.cooldown = 5
-        else:
-            if key[K_u]:
-                self.heading.rotate_ip(-5)
-                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-            if key[K_o]:
-                self.heading.rotate_ip(5)
-                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-            if key[K_k] and self.cooldown == 0:
-                shot = Shot(self.rect.center, self.heading)
-                orange_shots.add(shot)
-                all_sprites.add(shot)
-                self.cooldown = 5
-
-
-        # move with tank
-        self.rect.center = self.tank.rect.center
-
-        # wrap screen
-        if self.rect.x + self.rect.width < 0:
-            self.rect.x = self.area.width
-        if self.rect.y + self.rect.height < 0:
-            self.rect.y = self.area.height
-        if self.rect.x > self.area.width:
-            self.rect.x = -self.rect.width
-        if self.rect.y > self.area.height:
-            self.rect.y = -self.rect.height
 
 class Tank(pygame.sprite.Sprite):
     """Class to represent and control tanks"""
@@ -144,36 +92,90 @@ class Tank(pygame.sprite.Sprite):
         self.area = pygame.display.get_surface().get_rect()
         self.rect = self.image.get_rect(center=position)
         self.velocity = pygame.math.Vector2()
-        self.heading = pygame.math.Vector2(0, -10)
+        self.heading = pygame.math.Vector2(0, -5)
         self.turret = Turret(self,colour)
+        self.cooldown = 0
+        self.moved = False
+        self.turned = False
+        self.rotated = False
+        self.fired = False
     
     def kill(self):
         self.turret.kill()
         pygame.sprite.Sprite.kill(self)
     
+    def forward(self):
+        if self.moved: return
+        self.moved = True
+        self.rect.move_ip(self.heading)
+    
+    def turn_left(self):
+        if self.turned: return
+        self.turned = True
+        self.heading.rotate_ip(-5)
+        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
+    
+    def turn_right(self):
+        if self.turned: return
+        self.turned = True
+        self.heading.rotate_ip(5)
+        self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -5)))
+    
+    def rotate_left(self):
+        if self.rotated: return
+        self.rotated = True
+        self.turret.heading.rotate_ip(-5)
+        self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -5)))
+        
+    def rotate_right(self):
+        if self.rotated: return
+        self.rotated = True
+        self.turret.heading.rotate_ip(5)
+        self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -5)))
+
+    def fire(self):
+        if self.fired: return
+        self.fired = True
+        shot = Shot(self.rect.center, self.turret.heading)
+        if self.colour == 'green': green_shots.add(shot)
+        else: orange_shots.add(shot)
+        all_sprites.add(shot)
+        self.cooldown = 5
+    
     def update(self):
         """ update tank heading, speed, and position """
         key = pygame.key.get_pressed()
+        if self.cooldown > 0:
+            self.cooldown -= 1
 
         # read keyoard input
         if self.colour == 'green':
-            if key[K_a]:
-                self.heading.rotate_ip(-5)
-                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-            if key[K_d]:
-                self.heading.rotate_ip(5)
-                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
-            if key[K_w]:
-                self.rect.move_ip(self.heading)
+            green_control.action(self)
+#            if key[K_a]:
+#                self.turn_left()
+#            if key[K_d]:
+#                self.turn_right()
+#            if key[K_w]:
+#                self.forward()
+#            if key[K_q]:
+#                self.rotate_left()
+#            if key[K_e]:
+#                self.rotate_right()
+#            if key[K_s] and self.cooldown == 0:
+#                self.fire()
         else:
             if key[K_j]:
-                self.heading.rotate_ip(-5)
-                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+                self.turn_left()
             if key[K_l]:
-                self.heading.rotate_ip(5)
-                self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -10)))
+                self.turn_right()
             if key[K_i]:
-                self.rect.move_ip(self.heading)
+                self.forward()
+            if key[K_u]:
+                self.rotate_left()
+            if key[K_o]:
+                self.rotate_right()
+            if key[K_k] and self.cooldown == 0:
+                self.fire()
 
         # wrap screen
         if self.rect.x + self.rect.width < 0:
@@ -184,6 +186,16 @@ class Tank(pygame.sprite.Sprite):
             self.rect.x = -self.rect.width
         if self.rect.y > self.area.height:
             self.rect.y = -self.rect.height
+
+        # move turret with tank
+        self.turret.rect.center = self.rect.center
+
+        # clear action flags
+        self.moved = False
+        self.turned = False
+        self.rotated = False
+        self.fired = False
+
 
 
 def main():
@@ -216,8 +228,8 @@ def main():
         all_sprites.draw(screen)
         pygame.display.flip()
         frame_time = pygame.time.get_ticks() - start_time
-        if frame_time < 25:
-            pygame.time.delay(25-frame_time)
+        if frame_time < 15:
+            pygame.time.delay(15-frame_time)
 
 
 if __name__ == '__main__': main()
