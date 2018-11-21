@@ -82,10 +82,15 @@ class Tank(pygame.sprite.Sprite):
     def __init__(self,colour = 'green',position = (600,400)):
         pygame.sprite.Sprite.__init__(self)
         if colour != 'green' and colour != 'orange': colour = 'green'
-        self.colour = colour
         all_sprites.add(self, layer = 0)
-        if colour == 'green': green_tanks.add(self)
-        else: orange_tanks.add(self)
+        if colour == 'green':
+            green_tanks.add(self)
+            self.control = green_control
+            self.shot_group = green_shots
+        else:
+            orange_tanks.add(self)
+            self.control = orange_control
+            self.shot_group = orange_shots
         image_file = colour + 'Tank.png'
         self.base_image = load_image(image_file,75,75)
         self.image = self.base_image
@@ -140,8 +145,7 @@ class Tank(pygame.sprite.Sprite):
         if self.fired: return
         self.fired = True
         shot = Shot(self.rect.center, self.turret.heading)
-        if self.colour == 'green': green_shots.add(shot)
-        else: orange_shots.add(shot)
+        self.shot_group.add(shot)
         all_sprites.add(shot)
         self.cooldown = 5
     
@@ -152,11 +156,8 @@ class Tank(pygame.sprite.Sprite):
             self.cooldown -= 1
 
         # get control input
-        if self.colour == 'green':
-            green_control.action(self)
-        else:
-            orange_control.action(self)
-            
+        self.control.action(self)
+
         # wrap screen
         if self.rect.x + self.rect.width < 0:
             self.rect.x = self.area.width
