@@ -62,9 +62,10 @@ class Shot(pygame.sprite.Sprite):
 class Turret(pygame.sprite.Sprite):
     """Class to represent and control gun turrets"""
 
-    def __init__(self,tank):
+    def __init__(self,tank,colour):
         pygame.sprite.Sprite.__init__(self)
-        self.base_image = load_image('greenTurret.png',50,50)
+        image_file = colour + 'Turret.png'
+        self.base_image = load_image(image_file,50,50)
         self.image = self.base_image
         self.area = pygame.display.get_surface().get_rect()
         start_x = tank.rect.center[0]
@@ -110,18 +111,17 @@ class Turret(pygame.sprite.Sprite):
 class Tank(pygame.sprite.Sprite):
     """Class to represent and control tanks"""
     
-    def __init__(self):
+    def __init__(self,colour = 'green',position = (600,400)):
         pygame.sprite.Sprite.__init__(self)
-        self.base_image = load_image('greenTank.png',75,75)
+        if colour != 'green' and colour != 'orange': colour = 'green'
+        image_file = colour + 'Tank.png'
+        self.base_image = load_image(image_file,75,75)
         self.image = self.base_image
         self.area = pygame.display.get_surface().get_rect()
-        start_x = self.area.width/2
-        start_y = self.area.height/2
-        self.rect = self.image.get_rect(center=(start_x, start_y))
+        self.rect = self.image.get_rect(center=position)
         self.velocity = pygame.math.Vector2()
         self.heading = pygame.math.Vector2(0, -10)
-        #self.cooldown = 0
-        self.turret = Turret(self)
+        self.turret = Turret(self,colour)
         all_sprites.add(self.turret, layer = 1)
         self.turret.add(tanks)
     
@@ -161,7 +161,10 @@ def main():
     background = load_image('arena.png')
     screen.blit(background, (0, 0))
     
-    tank = Tank()
+    tank = Tank('green',(100,100))
+    all_sprites.add(tank, layer = 0)
+    tank.add(tanks)
+    tank = Tank('orange',(1100,700))
     all_sprites.add(tank, layer = 0)
     tank.add(tanks)
     
