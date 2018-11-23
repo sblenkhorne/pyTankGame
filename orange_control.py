@@ -24,4 +24,4 @@ def action(my_tank):
         if walls['w']: print('wall to west ',end='')
         print()
     if key[K_RSHIFT]:
-        print(my_tank.turret_direction())
+        print(my_tank.clear_shot())

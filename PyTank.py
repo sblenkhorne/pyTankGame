@@ -39,6 +39,25 @@ def rotate_ip(self, angle):
     return new_image
 
 
+# helper function for clear shot sensor
+def line(p1, p2):
+    A = (p1[1] - p2[1])
+    B = (p2[0] - p1[0])
+    C = (p1[0]*p2[1] - p2[0]*p1[1])
+    return A, B, -C
+    
+def intersection(L1, L2):
+    D  = L1[0] * L2[1] - L1[1] * L2[0]
+    Dx = L1[2] * L2[1] - L1[1] * L2[2]
+    Dy = L1[0] * L2[2] - L1[2] * L2[0]
+    if D != 0:
+        x = Dx / D
+        y = Dy / D
+        return int(x),int(y)
+    else:
+        return False
+
+
 class Wall(pygame.sprite.Sprite):
     """Class to represent obstacles"""
 
@@ -146,7 +165,22 @@ class Tank(pygame.sprite.Sprite):
         return (360-((round(int(self.turret.heading.angle_to(pygame.math.Vector2(0,-1)))<<1,-1))>>1))%360
 
     def clear_shot(self):
-        return False
+        maxx = self.rect.center[0] if self.rect.center[0] >= self.enemy.rect.center[0] else self.enemy.rect.center[0]
+        maxy = self.rect.center[1] if self.rect.center[1] >= self.enemy.rect.center[1] else self.enemy.rect.center[1]
+        minx = self.rect.center[0] if self.rect.center[0] <= self.enemy.rect.center[0] else self.enemy.rect.center[0]
+        miny = self.rect.center[1] if self.rect.center[1] <= self.enemy.rect.center[1] else self.enemy.rect.center[1]
+        L = line(self.rect.center,self.enemy.rect.center)
+        for x in range(0,1201,200):
+            i = intersection(L,line((x,0),(x,800)))
+            if i and minx <= x <= maxx:
+                for wall in enviro_sprites.sprites():
+                    if wall.rect.collidepoint(i): return False
+        for y in range(0,801,200):
+            i = intersection(L,line((0,y),(1200,y)))
+            if i and miny <= y <= maxy:
+                for wall in enviro_sprites.sprites():
+                    if wall.rect.collidepoint(i): return False
+        return True
     
     def forward(self):
         if self.moved: return False
