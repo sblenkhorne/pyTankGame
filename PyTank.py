@@ -119,6 +119,13 @@ class Tank(pygame.sprite.Sprite):
         self.rotated = False
         self.fired = False
         
+    def set_enemy(self, tank):
+        self.enemy = tank
+    
+    def kill(self):
+        self.turret.kill()
+        pygame.sprite.Sprite.kill(self)
+
     def get_walls(self):
         if self.rect.center[0] < 0 or self.rect.center[0] >= 1200:
             return maze_map[24]
@@ -126,14 +133,6 @@ class Tank(pygame.sprite.Sprite):
             return maze_map[25]
         return maze_map[6 * (self.rect.center[1]//200) + self.rect.center[0]//200]
 
-
-    def set_enemy(self, tank):
-        self.enemy = tank
-    
-    def kill(self):
-        self.turret.kill()
-        pygame.sprite.Sprite.kill(self)
-    
     def my_position(self):
         return self.rect.center
     
