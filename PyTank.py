@@ -85,7 +85,7 @@ class Shot(pygame.sprite.Sprite):
         self.area = pygame.display.get_surface().get_rect()
         self.rect = self.image.get_rect(center=position)
         self.radius = 6
-        self.heading = heading
+        self.heading = heading * 1
         self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
         self.rect.move_ip(self.heading)
     
