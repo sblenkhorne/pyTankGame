@@ -222,6 +222,7 @@ class Tank(pygame.sprite.Sprite):
 
     def fire(self):
         if self.fired: return
+        if self.cooldown != 0: return
         self.fired = True
         shot = Shot(self.rect.center, self.turret.heading)
         self.shot_group.add(shot)

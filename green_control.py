@@ -13,6 +13,6 @@ def action(my_tank):
         my_tank.rotate_left()
     if key[K_e]:
         my_tank.rotate_right()
-    if key[K_s] and my_tank.cooldown == 0:
+    if key[K_s]:
         my_tank.fire()
 
