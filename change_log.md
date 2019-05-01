@@ -1,11 +1,20 @@
 Still to do / ideas to try:
 
 full motion movement calls - such as my_tank.turn_right(# of degrees) etc
+
 call to detect shots in play
+
 auto-tournament play
 
 
+
 These are things changed or implemented since we last talked:
+
+I assumed that you meant for your WallSensor class to subclass Sprite and changed it so it does
+
+I only had the old tank and turret images in four colours, I'm assuming you used a new image to make the mask simpler and faster?
+
+walls can be destroyed by shooting them. To enable this add a second parameter of False to the Wall constructor
 
 Can now use from two to four players, blue, green, orange and red. If a control script assigns an AI level it assigned to ALL other tanks.  Can set a hardcoded number of players or user input.
 

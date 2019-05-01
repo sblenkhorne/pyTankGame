@@ -114,7 +114,6 @@ class Shot(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.base_image = load_image('bullet.png',15,15)
         self.image = self.base_image
-        self.area = pygame.display.get_surface().get_rect()
         self.rect = self.image.get_rect(center=position)
         self.radius = 6
         self.heading = heading * 1
