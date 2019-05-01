@@ -4,16 +4,36 @@
 # November 2018
 
 
-import pygame, os, random, green_control, orange_control
+import pygame, os, random, blue_control, green_control, orange_control, red_control, mapGen
 from pygame.locals import *
 
-
+# Global sprite groups and other globals
 all_sprites = pygame.sprite.LayeredUpdates()
-green_shots = pygame.sprite.Group()
-orange_shots = pygame.sprite.Group()
+shots = [pygame.sprite.Group(),pygame.sprite.Group(),pygame.sprite.Group(),pygame.sprite.Group()]
 enviro_sprites = pygame.sprite.Group()
-maze_map = []
+tanks_sprites = pygame.sprite.Group()
+tank_colours = ['blue','green','orange','red']
+control_files = [blue_control,green_control,orange_control,red_control]
+players = []
 
+# helper function for visibility sensor
+def intersect(p1,p2,p3,p4):
+    x1,y1 = p1
+    x2,y2 = p2
+    x3,y3 = p3
+    x4,y4 = p4
+    a1 = (y1 - y2)
+    b1 = (x2 - x1)
+    c1 = -(x1 * y2 - x2 * y1)
+    a2 = (y3 - y4)
+    b2 = (x4 - x3)
+    c2 = -(x3 * y4 - x4 * y3)
+    d = a1 * b2 - b1 * a2
+    dx = c1 * b2 - b1 * c2
+    dy = a1 * c2 - c1 * a2
+    if d == 0: return False
+    if not (min(x3,x4) <= dx/d <= max(x3,x4)) or not (min(y3,y4) <= dy/d <= max(y3,y4)): return False
+    return True
 
 def load_image(filename,x=None,y=None):
     """Load an image from file
@@ -25,7 +45,6 @@ def load_image(filename,x=None,y=None):
     image = pygame.image.load(os.path.join("assets", filename)).convert_alpha()
     if x and y: image = pygame.transform.smoothscale(image,(x,y))
     return image
-
 
 def rotate_ip(self, angle):
     """ Rotate an image about its center
@@ -39,45 +58,57 @@ def rotate_ip(self, angle):
     return new_image
 
 
-# helper function for clear shot sensor
-def line(p1, p2):
-    A = (p1[1] - p2[1])
-    B = (p2[0] - p1[0])
-    C = (p1[0]*p2[1] - p2[0]*p1[1])
-    return A, B, -C
-    
-def intersection(L1, L2):
-    D  = L1[0] * L2[1] - L1[1] * L2[0]
-    Dx = L1[2] * L2[1] - L1[1] * L2[2]
-    Dy = L1[0] * L2[2] - L1[2] * L2[0]
-    if D != 0:
-        x = Dx / D
-        y = Dy / D
-        return int(x),int(y)
-    else:
-        return False
-
-
 class Wall(pygame.sprite.Sprite):
     """Class to represent obstacles"""
-
-    def __init__(self,position,orientation):
+    def __init__(self,position):
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 0)
         enviro_sprites.add(self)
-        self.image = load_image('wall.png',200,20)
-        self.image = pygame.transform.rotate(self.image,orientation)
+        self.image = load_image('stoneWall.png',60,60)
         self.mask = pygame.mask.from_surface(self.image)
-        if orientation == 0: self.rect = self.image.get_rect(topleft = (position[0],position[1]-10))
-        if orientation == 90: self.rect = self.image.get_rect(topleft = (position[0]-10,position[1]))
-        if orientation == 180: self.rect = self.image.get_rect(bottomright = (position[0],position[1]+10))
-        if orientation == 270: self.rect = self.image.get_rect(bottomright = (position[0]+10,position[1]))
+        self.rect = self.image.get_rect(topleft = (position[0],position[1]))
 
+class Player():
+    def __init__(self,number):
+        self.number = number
+        self.colour = tank_colours[number]
+        self.alive = True
+        self.respawn_timer = 0
+        self.lives = 3
+        self.kills = 0
 
+    def die(self,position):
+        self.dead_at = position
+        self.alive = False
+        self.respawn_timer = 60
+        self.lives -= 1
+
+    def respawn(self):
+        if self.lives == 0: return True
+        self.respawn_timer -= 1
+        if self.respawn_timer: return
+        self.alive = True
+        Tank(self.number,self.dead_at)
+
+class wallSensor():
+    """docstring for ClassName"""
+    def __init__(self, tank, side):
+        pygame.sprite.Sprite.__init__(self)
+        if side=='w':
+            self.rect = Rect(tank.rect.topleft,(20,30))
+            self.color = (100,100,0)
+        elif side == 'e':
+            self.rect = Rect(tank.rect.topright,(20,30))
+            self.color = (255,0,0)
+        elif side == 'n':
+            self.rect = Rect(tank.rect.topleft,(30,20))
+            self.color = (0,255,0)
+        elif side == 's':
+            self.rect = Rect(tank.rect.bottomleft,(30,20))
+            self.color = (0,0,255)
 
 class Shot(pygame.sprite.Sprite):
     """Class to represent and control projectiles"""
-    
     def __init__(self, position, heading):
         pygame.sprite.Sprite.__init__(self)
         self.base_image = load_image('bullet.png',15,15)
@@ -94,10 +125,8 @@ class Shot(pygame.sprite.Sprite):
         self.rect.move_ip(self.heading)
         if pygame.sprite.spritecollideany(self, enviro_sprites) or not self.area.contains(self.rect): self.kill()
 
-
 class Turret(pygame.sprite.Sprite):
     """Class to represent gun turrets"""
-
     def __init__(self,tank,colour,heading):
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 1)
@@ -106,151 +135,287 @@ class Turret(pygame.sprite.Sprite):
         self.image = self.base_image
         self.rect = self.image.get_rect(center=tank.rect.center)
         self.heading = heading * 2
-        if colour == 'green': self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
-
 
 class Tank(pygame.sprite.Sprite):
     """Class to represent and control tanks"""
-    
-    def __init__(self,colour = 'green',position = (600,400)):
+    def __init__(self,number,position):
         pygame.sprite.Sprite.__init__(self)
-        if colour != 'green' and colour != 'orange': colour = 'green'
+        self.colour = tank_colours[number]
+        self.player_number = number
         all_sprites.add(self, layer = 0)
-        image_file = colour + 'Tank.png'
+        tanks_sprites.add(self)
+        image_file = self.colour + 'Tank.png'
+        self.tankFireSound = pygame.mixer.Sound("sounds/tankFire.wav")
+        self.tankExplosion = pygame.mixer.Sound("sounds/tankExplosion.wav")
         self.base_image = load_image(image_file,75,75)
         self.image = self.base_image
         self.rect = self.image.get_rect(center=position)
-        if colour == 'green':
-            self.control = green_control
-            self.shot_group = green_shots
-            self.heading = pygame.math.Vector2(0, 10)
-            self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
-        else:
-            self.control = orange_control
-            self.shot_group = orange_shots
-            self.heading = pygame.math.Vector2(0, -10)
+        self.speed = 10
+        self.turn_rate = 5
+        self.rotate_rate = 3
+        self.control = control_files[number]
+        self.shot_group = shots[number]
+        self.name = self.colour + " tank"
+        self.heading = pygame.math.Vector2(0, -self.speed)
         self.mask = pygame.mask.from_surface(self.image)
         self.radius = 35
-        self.turret = Turret(self,colour,self.heading)
-        self.cooldown = 0
+        self.__health = 2
+        self.turret = Turret(self,self.colour,self.heading)
+        self.nSensor = wallSensor(self,'n')
+        self.sSensor = wallSensor(self,'s')
+        self.wSensor = wallSensor(self,'w')
+        self.eSensor = wallSensor(self,'e')
+        self.flSensor = pygame.math.Vector2(-45,-45)
+        self.frSensor = pygame.math.Vector2(45,-45)
+        self.blSensor = pygame.math.Vector2(-45,45)
+        self.brSensor = pygame.math.Vector2(45,45)
+        self.fSensor = pygame.math.Vector2(0,-50)
+        self.rSensor = pygame.math.Vector2(50,0)
+        self.bSensor = pygame.math.Vector2(0,50)
+        self.lSensor = pygame.math.Vector2(-50,0)
+        self.__cooldown = 0
         self.moved = False
         self.turned = False
         self.rotated = False
         self.fired = False
-        
-    def set_enemy(self, tank):
-        self.enemy = tank
+        self.AIlevel = 0
     
-    def kill(self):
-        self.turret.kill()
-        pygame.sprite.Sprite.kill(self)
+    def set_enemy_lvl(self,lvl):
+        for tank in tanks_sprites.sprites():
+            if self.player_number == tank.player_number: continue
+            tank.AIlevel = lvl
 
-    def get_walls(self):
-        if self.rect.center[0] < 0 or self.rect.center[0] >= 1200:
-            return maze_map[24]
-        if self.rect.center[1] < 0 or self.rect.center[1] >= 800:
-            return maze_map[25]
-        return maze_map[6 * (self.rect.center[1]//200) + self.rect.center[0]//200]
+    def set_Name(self, newName):
+        self.name = newName
+    
+    def damaged(self):
+        return self.__health != 2
 
     def my_position(self):
         return self.rect.center
-    
-    def enemy_position(self):
-        return self.enemy.rect.center
-    
+
+    def my_AI_level(self):
+        return self.AIlevel
+
     def my_heading(self):
         return (360-((round(int(self.heading.angle_to(pygame.math.Vector2(0,-1)))<<1,-1))>>1))%360
     
     def turret_direction(self):
         return (360-((round(int(self.turret.heading.angle_to(pygame.math.Vector2(0,-1)))<<1,-1))>>1))%360
 
-    def clear_shot(self):
-        maxx = self.rect.center[0] if self.rect.center[0] >= self.enemy.rect.center[0] else self.enemy.rect.center[0]
-        maxy = self.rect.center[1] if self.rect.center[1] >= self.enemy.rect.center[1] else self.enemy.rect.center[1]
-        minx = self.rect.center[0] if self.rect.center[0] <= self.enemy.rect.center[0] else self.enemy.rect.center[0]
-        miny = self.rect.center[1] if self.rect.center[1] <= self.enemy.rect.center[1] else self.enemy.rect.center[1]
-        L = line(self.rect.center,self.enemy.rect.center)
-        for x in range(0,1201,200):
-            i = intersection(L,line((x,0),(x,800)))
-            if i and minx <= x <= maxx:
-                for wall in enviro_sprites.sprites():
-                    if wall.rect.collidepoint(i): return False
-        for y in range(0,801,200):
-            i = intersection(L,line((0,y),(1200,y)))
-            if i and miny <= y <= maxy:
-                for wall in enviro_sprites.sprites():
-                    if wall.rect.collidepoint(i): return False
-        return True
+    def weapon_cooldown(self):
+        return self.__cooldown
     
+    def checkSensors(self):
+        sensors = {'n':False,'s':False,'w':False,'e':False}
+        if pygame.sprite.spritecollideany(self.nSensor,enviro_sprites,collided=pygame.sprite.collide_circle): sensors['n']=True
+        if pygame.sprite.spritecollideany(self.sSensor,enviro_sprites,collided=pygame.sprite.collide_circle): sensors['s']=True
+        if pygame.sprite.spritecollideany(self.wSensor,enviro_sprites,collided=pygame.sprite.collide_circle): sensors['w']=True
+        if pygame.sprite.spritecollideany(self.eSensor,enviro_sprites,collided=pygame.sprite.collide_circle): sensors['e']=True
+        return sensors
+    
+    def pointSensors(self):
+        sensors = {'fl':False,'f':False,'fr':False,'r':False,'br':False,'b':False,'bl':False,'l':False}
+        for object in enviro_sprites.sprites() + tanks_sprites.sprites():
+            if object == self: continue
+            if object.rect.collidepoint(self.flSensor + self.rect.center): sensors['fl'] = True
+            if object.rect.collidepoint(self.frSensor + self.rect.center): sensors['fr'] = True
+            if object.rect.collidepoint(self.blSensor + self.rect.center): sensors['bl'] = True
+            if object.rect.collidepoint(self.brSensor + self.rect.center): sensors['br'] = True
+            if object.rect.collidepoint(self.fSensor + self.rect.center): sensors['f'] = True
+            if object.rect.collidepoint(self.rSensor + self.rect.center): sensors['r'] = True
+            if object.rect.collidepoint(self.bSensor + self.rect.center): sensors['b'] = True
+            if object.rect.collidepoint(self.lSensor + self.rect.center): sensors['l'] = True
+        return sensors
+
+    def enemy_tanks(self):
+        # returns a list of positions of visible enemy tanks, closest in index 0 (rest NOT in order!!)
+        visible = []
+        closest = 2250000
+        for tank in tanks_sprites.sprites():
+            if self.player_number == tank.player_number: continue
+            vis = True
+            minx = min(self.rect.topleft[0],tank.rect.topleft[0])
+            miny = min(self.rect.topleft[1],tank.rect.topleft[1])
+            maxx = max(self.rect.bottomright[0],tank.rect.bottomright[0])
+            maxy = max(self.rect.bottomright[1],tank.rect.bottomright[1])
+            for wall in enviro_sprites.sprites():
+                if minx < wall.rect.center[0] < maxx and miny < wall.rect.center[1] < maxy:
+                    if intersect(self.rect.center,tank.rect.center,wall.rect.topleft,wall.rect.bottomright):
+                        vis = False
+                        break
+                    if intersect(self.rect.center,tank.rect.center,wall.rect.topright,wall.rect.bottomleft):
+                        vis = False
+                        break
+            if vis:
+                distance = (self.rect.center[0] - tank.rect.center[0])**2 + (self.rect.center[1] - tank.rect.center[1])**2
+                if distance < closest:
+                    closest = distance
+                    visible.insert(0,tank.rect.center)
+                else:
+                    visible.append(tank.rect.center)
+        return visible
+
     def forward(self):
         if self.moved: return False
         self.moved = True
-        self.rect.move_ip(self.heading * 0.8)
-        if pygame.sprite.collide_mask(self, self.enemy):
-            self.rect.move_ip(-self.heading * 0.8)
-            return False
+        self.rect.move_ip(self.heading)
+        for tank in tanks_sprites.sprites():
+            if self.player_number == tank.player_number: continue
+            if pygame.sprite.collide_mask(self, tank):
+                self.rect.move_ip(-self.heading)
+                return False
         if pygame.sprite.spritecollideany(self, enviro_sprites, collided = pygame.sprite.collide_mask):
-            self.rect.move_ip(-self.heading * 0.8)
+            self.rect.move_ip(-self.heading)
             return False
         return True
-    
+
+    def reverse(self):
+        if self.moved: return False
+        self.moved = True
+        self.rect.move_ip(-self.heading)
+        for tank in tanks_sprites.sprites():
+            if self.player_number == tank.player_number: continue
+            if pygame.sprite.collide_mask(self, tank):
+                self.rect.move_ip(self.heading)
+                return False
+        if pygame.sprite.spritecollideany(self, enviro_sprites, collided = pygame.sprite.collide_mask):
+            self.rect.move_ip(self.heading)
+            return False
+        return True
+
     def turn_left(self):
         if self.turned: return
         self.turned = True
-        self.heading.rotate_ip(-5)
+        self.heading.rotate_ip(-self.turn_rate)
+        self.flSensor.rotate_ip(-self.turn_rate)
+        self.fSensor.rotate_ip(-self.turn_rate)
+        self.frSensor.rotate_ip(-self.turn_rate)
+        self.rSensor.rotate_ip(-self.turn_rate)
+        self.brSensor.rotate_ip(-self.turn_rate)
+        self.bSensor.rotate_ip(-self.turn_rate)
+        self.blSensor.rotate_ip(-self.turn_rate)
+        self.lSensor.rotate_ip(-self.turn_rate)
         self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
         self.mask = pygame.mask.from_surface(self.image)
     
     def turn_right(self):
         if self.turned: return
         self.turned = True
-        self.heading.rotate_ip(5)
+        self.heading.rotate_ip(self.turn_rate)
+        self.flSensor.rotate_ip(self.turn_rate)
+        self.fSensor.rotate_ip(self.turn_rate)
+        self.frSensor.rotate_ip(self.turn_rate)
+        self.rSensor.rotate_ip(self.turn_rate)
+        self.brSensor.rotate_ip(self.turn_rate)
+        self.bSensor.rotate_ip(self.turn_rate)
+        self.blSensor.rotate_ip(self.turn_rate)
+        self.lSensor.rotate_ip(self.turn_rate)
         self.image = rotate_ip(self, self.heading.angle_to(pygame.math.Vector2(0, -1)))
         self.mask = pygame.mask.from_surface(self.image)
     
     def rotate_left(self):
         if self.rotated: return
         self.rotated = True
-        self.turret.heading.rotate_ip(-5)
+        self.turret.heading.rotate_ip(-self.rotate_rate)
         self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -1)))
-        
+    
     def rotate_right(self):
         if self.rotated: return
         self.rotated = True
-        self.turret.heading.rotate_ip(5)
+        self.turret.heading.rotate_ip(self.rotate_rate)
         self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -1)))
 
     def fire(self):
         if self.fired: return
-        if self.cooldown != 0: return
+        if self.__cooldown != 0: return
         self.fired = True
         shot = Shot(self.rect.center, self.turret.heading)
         self.shot_group.add(shot)
         all_sprites.add(shot)
-        self.cooldown = 15
+        self.__cooldown = 50
+        pygame.mixer.Sound.play(self.tankFireSound)
     
-    def update(self):
-        """ update tank heading and position """
-        
-        if self.cooldown > 0:
-            self.cooldown -= 1
+    def take_damage(self):
+        self.__health -= 1
+        pygame.mixer.Sound.play(self.tankExplosion)
+        if self.__health == 0: return True
+        self.heading = self.heading * 0.7
+        self.rotate_rate = 2
+        self.turn_rate = 3
+        return False
+    
+    def kill(self):
+        self.turret.kill()
+        pygame.sprite.Sprite.kill(self)
+    
+    def drawHealthBar(self):
+        healthRect = pygame.Rect(self.rect.center[0]-40,self.rect.center[1]-50,80*self.__health/2,10)
+        healthOutline = pygame.Rect(self.rect.center[0]-40,self.rect.center[1]-50,80,10)
+        if self.__health == 2:
+            rectCol = (0,255,0)
+        else:
+            rectCol = (255, 160, 0)
+        pygame.draw.rect(pygame.display.get_surface(),rectCol,healthRect,0)
+        pygame.draw.rect(pygame.display.get_surface(),(0,0,0),healthOutline,1)
+            
+    def drawTankName(self):
+        nameTxt = pygame.font.Font('freesansbold.ttf',15)
+        text = str(players[self.player_number].lives)+' '+self.name+' '+str(players[self.player_number].kills)
+        textSurf, textRect = text_objects(text, nameTxt, (0,0,0))
+        textRect.center = (self.rect.center[0], self.rect.center[1]-60)
+        pygame.display.get_surface().blit(textSurf, textRect)
 
-        # get control input
+    def update(self):
+        """ tank update """
+        self.drawTankName()
+        
+        # shot cooldown
+        if self.__cooldown > 0: self.__cooldown -= 1
+        
+        # check if shot
+        shot = None
+        for shot_group in shots:
+            if shot_group == self.shot_group: continue
+            shot = pygame.sprite.spritecollideany(self, shot_group, collided = pygame.sprite.collide_circle)
+            if shot:
+                shot.kill()
+                if self.take_damage():
+                    players[self.player_number].die(self.rect.center)
+                    players[shots.index(shot_group)].kills += 1
+                    self.kill()
+                break
+        self.drawHealthBar()
+
+        # control input
         self.control.action(self)
 
-        # wrap screen
-        if self.rect.x + self.rect.width < 0:
-            self.rect.x = 1200
-        if self.rect.y + self.rect.height < 0:
-            self.rect.y = 800
-        if self.rect.x > 1200:
-            self.rect.x = -self.rect.width
-        if self.rect.y > 800:
-            self.rect.y = -self.rect.height
+#       ************************** visibility and sensor testing visuals can be removed *********************
 
-        # move turret with tank
+        if self.player_number == 0:
+            area = pygame.display.get_surface()
+            pygame.draw.line(area,(100,100,100),self.rect.center,self.rect.center+self.flSensor,3)
+            pygame.draw.line(area,(100,100,255),self.rect.center,self.rect.center+self.fSensor,3)
+            pygame.draw.line(area,(100,255,100),self.rect.center,self.rect.center+self.frSensor,3)
+            pygame.draw.line(area,(100,255,255),self.rect.center,self.rect.center+self.rSensor,3)
+            pygame.draw.line(area,(255,100,100),self.rect.center,self.rect.center+self.brSensor,3)
+            pygame.draw.line(area,(255,100,255),self.rect.center,self.rect.center+self.bSensor,3)
+            pygame.draw.line(area,(255,255,100),self.rect.center,self.rect.center+self.blSensor,3)
+            pygame.draw.line(area,(255,255,255),self.rect.center,self.rect.center+self.lSensor,3)
+            seen = self.enemy_tanks()
+            if seen: pygame.draw.line(area,(0,255,0),self.rect.center,seen.pop(0),5)
+            if seen:
+                for tank in seen: pygame.draw.line(area,(255,0,0),self.rect.center,tank,5)
+
+#       ******************************************************************************************************
+
+        # move turret & sensors
         self.turret.rect.center = self.rect.center
-
+        self.nSensor.rect.center = (self.rect.center[0], self.rect.center[1] - 25)
+        self.sSensor.rect.center = (self.rect.center[0], self.rect.center[1] + 25)
+        self.wSensor.rect.center = (self.rect.center[0]-25, self.rect.center[1])
+        self.eSensor.rect.center = (self.rect.center[0]+25, self.rect.center[1])
+        
         # clear action flags
         self.moved = False
         self.turned = False
@@ -258,80 +423,74 @@ class Tank(pygame.sprite.Sprite):
         self.fired = False
 
 
+def text_objects(text, font, txtColour):
+    textSurface = font.render(text, True, txtColour)
+    return textSurface, textSurface.get_rect()
 
-def set_up_walls():
-    for _ in range(24): maze_map.append({'n':0,'s':0,'e':0,'w':0})
-    maze_map.append({'n':1,'s':1,'e':0,'w':0})
-    maze_map.append({'n':0,'s':0,'e':1,'w':1})
-    Wall((0,10),0)
-    maze_map[0]['n'] = 1
-    Wall((200,10),0)
-    maze_map[1]['n'] = 1
-    Wall((400,10),0)
-    maze_map[2]['n'] = 1
-    Wall((800,10),0)
-    maze_map[4]['n'] = 1
-    Wall((1000,10),0)
-    maze_map[5]['n'] = 1
-    Wall((0,790),0)
-    maze_map[18]['s'] = 1
-    Wall((200,790),0)
-    maze_map[19]['s'] = 1
-    Wall((400,790),0)
-    maze_map[20]['s'] = 1
-    Wall((800,790),0)
-    maze_map[22]['s'] = 1
-    Wall((1000,790),0)
-    maze_map[23]['s'] = 1
-    Wall((10,0),90)
-    maze_map[0]['w'] = 1
-    Wall((10,400),90)
-    maze_map[12]['w'] = 1
-    Wall((10,600),90)
-    maze_map[18]['w'] = 1
-    Wall((1190,0),90)
-    maze_map[5]['e'] = 1
-    Wall((1190,400),90)
-    maze_map[17]['e'] = 1
-    Wall((1190,600),90)
-    maze_map[23]['e'] = 1
-    point = [0,1,2,3,4,6,7,8,9,10,12,13,14,15,16]
-    index = 0
-    for y in range(200,700,200):
-        for x in range(200,1100,200):
-            r = random.choice([0,90,180,270])
-            if r == 0:
-                maze_map[point[index]+1]['s'] = 1
-                maze_map[point[index]+7]['n'] = 1
-            elif r == 90:
-                maze_map[point[index]+6]['e'] = 1
-                maze_map[point[index]+7]['w'] = 1
-            elif r == 180:
-                maze_map[point[index]]['s'] = 1
-                maze_map[point[index]+6]['n'] = 1
-            elif r == 270:
-                maze_map[point[index]]['e'] = 1
-                maze_map[point[index]+1]['w'] = 1
-            Wall((x,y),r)
-            index += 1
+def message_display(text, txtColour, fntSize):
+    largeText = pygame.font.Font('freesansbold.ttf',fntSize)
+    TextSurf, TextRect = text_objects(str(text), largeText, txtColour)
+    TextRect.center = (600,450)
+    pygame.display.get_surface().blit(TextSurf, TextRect)
+    pygame.display.update()
+
+def set_up_level(maze_maps):
+    maze_map = maze_maps[random.randint(0,len(maze_maps)-1)]
+    for y in range(len(maze_map[0])):
+        for x in range(len(maze_map[0][y])):
+            if maze_map[0][y][x]=="1":
+                Wall((x*60,y*60))
+    for t in range(20):
+        Wall((t*60,-60))
+        Wall((t*60,900))
+    for w in range(15):
+        Wall((-60,w*60))
+        Wall((1200,w*60))
+    return maze_map[1]
+
+def drawBackground(screen,background):
+    for b in range(1200//128):
+        for c in range(900//128 + 3):
+            screen.blit(background,(c*128,b*128))
+
+def countdown(count, screen, background):
+    while count+1:
+        start_time = pygame.time.get_ticks()
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                return
+        drawBackground(screen,background)
+        all_sprites.draw(screen)
+        message_display(count,(0,0,0),200)
+        count -= 1
+        pygame.display.flip()
+        timer = 20000000
+        while timer: timer -= 1
+
 
 def main():
-    """run the game"""
     # initialization and setup
     pygame.init()
+    pygame.mixer.pre_init(44100, 16, 2, 4096)
     random.seed()
-    screen = pygame.display.set_mode((1200, 800))
+    screen = pygame.display.set_mode((1200, 900))
     pygame.display.set_caption('PyTank')
+    background = load_image('sand.png',128,128)
+    maze_maps = mapGen.getMaps()
+    num_players = 4     # set to 2-4 or to 0 for user input
+    while num_players < 2 or num_players > 4:
+        num_players = int(input("Please enter number of players (2-4):"))
     
-    background = load_image('arena.png')
-    screen.blit(background, (0, 0))
+    # initial tank set-up
+    spawns = set_up_level(maze_maps)
+    for i in range(num_players):
+        players.append(Player(i))
+        spawn = spawns.pop(random.randint(0,len(spawns)-1))
+        Tank(i,spawn)
 
-    set_up_walls()
-    greenT = Tank('green',(100,100))
-    orangeT = Tank('orange',(1100,700))
-    greenT.set_enemy(orangeT)
-    orangeT.set_enemy(greenT)
-    
+    # onscreen countdown to game start
+    countdown(3, screen, background)
+
     # game loop
     while True:
         start_time = pygame.time.get_ticks()
@@ -339,14 +498,17 @@ def main():
             if event.type == QUIT:
                 return
 
-        all_sprites.update()
-        if pygame.sprite.spritecollideany(greenT, orange_shots, collided = pygame.sprite.collide_circle): greenT.kill()
-        if pygame.sprite.spritecollideany(orangeT, green_shots, collided = pygame.sprite.collide_circle): orangeT.kill()
+        out_of_play = 0
+        for player in players:
+            if not player.alive:
+                if player.respawn(): out_of_play += 1
+        if out_of_play == num_players - 1: break
 
-        
-        all_sprites.clear(screen, background)
+        drawBackground(screen,background)
+        all_sprites.update()
         all_sprites.draw(screen)
         pygame.display.flip()
+        
         frame_time = pygame.time.get_ticks() - start_time
         if frame_time < 25:
             pygame.time.delay(25-frame_time)
