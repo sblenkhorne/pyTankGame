@@ -1,7 +1,6 @@
 Still to do / ideas to try:
 
 full motion movement calls - such as my_tank.turn_right(# of degrees) etc
-destructible walls
 call to detect shots in play
 auto-tournament play
 

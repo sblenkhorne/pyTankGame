@@ -60,13 +60,14 @@ def rotate_ip(self, angle):
 
 class Wall(pygame.sprite.Sprite):
     """Class to represent obstacles"""
-    def __init__(self,position):
+    def __init__(self,position,perm = True):
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 0)
         enviro_sprites.add(self)
         self.image = load_image('stoneWall.png',60,60)
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect(topleft = (position[0],position[1]))
+        self.permanent = perm
 
 class Player():
     def __init__(self,number):
@@ -123,7 +124,10 @@ class Shot(pygame.sprite.Sprite):
     def update(self):
         """ update shot position """
         self.rect.move_ip(self.heading)
-        if pygame.sprite.spritecollideany(self, enviro_sprites) or not self.area.contains(self.rect): self.kill()
+        wall_hit = pygame.sprite.spritecollideany(self, enviro_sprites)
+        if wall_hit:
+            if not wall_hit.permanent: wall_hit.kill()
+            self.kill()
 
 class Turret(pygame.sprite.Sprite):
     """Class to represent gun turrets"""
@@ -390,25 +394,6 @@ class Tank(pygame.sprite.Sprite):
         # control input
         self.control.action(self)
 
-#       ************************** visibility and sensor testing visuals can be removed *********************
-
-        if self.player_number == 0:
-            area = pygame.display.get_surface()
-            pygame.draw.line(area,(100,100,100),self.rect.center,self.rect.center+self.flSensor,3)
-            pygame.draw.line(area,(100,100,255),self.rect.center,self.rect.center+self.fSensor,3)
-            pygame.draw.line(area,(100,255,100),self.rect.center,self.rect.center+self.frSensor,3)
-            pygame.draw.line(area,(100,255,255),self.rect.center,self.rect.center+self.rSensor,3)
-            pygame.draw.line(area,(255,100,100),self.rect.center,self.rect.center+self.brSensor,3)
-            pygame.draw.line(area,(255,100,255),self.rect.center,self.rect.center+self.bSensor,3)
-            pygame.draw.line(area,(255,255,100),self.rect.center,self.rect.center+self.blSensor,3)
-            pygame.draw.line(area,(255,255,255),self.rect.center,self.rect.center+self.lSensor,3)
-            seen = self.enemy_tanks()
-            if seen: pygame.draw.line(area,(0,255,0),self.rect.center,seen.pop(0),5)
-            if seen:
-                for tank in seen: pygame.draw.line(area,(255,0,0),self.rect.center,tank,5)
-
-#       ******************************************************************************************************
-
         # move turret & sensors
         self.turret.rect.center = self.rect.center
         self.nSensor.rect.center = (self.rect.center[0], self.rect.center[1] - 25)
@@ -439,7 +424,7 @@ def set_up_level(maze_maps):
     for y in range(len(maze_map[0])):
         for x in range(len(maze_map[0][y])):
             if maze_map[0][y][x]=="1":
-                Wall((x*60,y*60))
+                Wall((x*60,y*60),False)
     for t in range(20):
         Wall((t*60,-60))
         Wall((t*60,900))
