@@ -90,7 +90,7 @@ class Player():
         self.alive = True
         Tank(self.number,self.dead_at)
 
-class wallSensor():
+class wallSensor(pygame.sprite.Sprite):     # was this meant to subclass Sprite? 'cause it didn't
     """docstring for ClassName"""
     def __init__(self, tank, side):
         pygame.sprite.Sprite.__init__(self)
@@ -384,7 +384,7 @@ class Tank(pygame.sprite.Sprite):
                     players[self.player_number].die(self.rect.center)
                     players[shots.index(shot_group)].kills += 1
                     self.kill()
-                break
+                    break
         self.drawHealthBar()
 
         # control input
@@ -502,7 +502,7 @@ def main():
         for player in players:
             if not player.alive:
                 if player.respawn(): out_of_play += 1
-        if out_of_play == num_players - 1: break
+        if out_of_play >= num_players - 1: break
 
         drawBackground(screen,background)
         all_sprites.update()
