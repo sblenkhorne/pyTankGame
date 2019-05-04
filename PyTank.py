@@ -182,6 +182,17 @@ class Tank(pygame.sprite.Sprite):
         self.rotated = False
         self.fired = False
         self.AIlevel = 0
+        self.turn_target = 0
+    
+    def turn_right_for(self,degs):
+        if self.turn_target == 0: self.turn_target = degs
+    
+    def turn_left_for(self,degs):
+        if self.turn_target == 0: self.turn_target = -degs
+    
+    def turn_to(self,bearing):
+        if self.turn_target != 0: return
+        self.turn_target = ((180 + bearing - self.my_heading()) % 360) - 180
     
     def set_enemy_lvl(self,lvl):
         for tank in tanks_sprites.sprites():
@@ -389,6 +400,16 @@ class Tank(pygame.sprite.Sprite):
                     self.kill()
                     break
         self.drawHealthBar()
+        
+        # execute turn to target bearing
+        if self.turn_target < 0:
+            self.turn_left()
+            self.turn_target += self.turn_rate
+            if -self.turn_target < self.turn_rate: self.turn_target = 0
+        if self.turn_target > 0:
+            self.turn_right()
+            self.turn_target -= self.turn_rate
+            if self.turn_target < self.turn_rate: self.turn_target = 0
 
         # control input
         self.control.action(self)

@@ -1,7 +1,5 @@
 Still to do / ideas to try:
 
-full motion movement calls - such as my_tank.turn_right(# of degrees) etc
-
 call to detect shots in play
 
 auto-tournament play
@@ -9,6 +7,8 @@ auto-tournament play
 
 
 These are things changed or implemented since we last talked:
+
+implemented full motion turns - turn_right_for(degrees), turn_left_for(degrees) and turn_to(heading).  Examples are in green_control
 
 I assumed that you meant for your WallSensor class to subclass Sprite and changed it so it does
 

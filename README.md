@@ -33,6 +33,12 @@ my_tank.reverse() - moves the tank backward approximately 10 pixels
 my_tank.turn_left() - turns the tank 5 degrees to the left (turret does not turn with tank)
 my_tank.turn_right() - turns the tank 5 degrees to the right
 
+you can also execute multi-frame turns with these commands:
+
+my_tank.turn_right_for(degrees) - turns the tank at its current rate of turn as close to 'degrees' as possible
+my_tank.turn_left_for(degrees) - same but to the left
+my_tank.turn_to(heading) - turns at the current rate of turn in the shortest direction to get to heading
+
 only one forward and one turn command can be issued each frame.  If multiple calls are made to forward or turns they will be ignored.
 
 You gunner can be commanded to rotate the gun turret or fire the gun using these commands:
