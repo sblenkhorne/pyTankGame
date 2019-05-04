@@ -8,7 +8,7 @@ auto-tournament play
 
 These are things changed or implemented since we last talked:
 
-implemented full motion turns - turn_right_for(degrees), turn_left_for(degrees) and turn_to(heading).  Examples are in green_control
+implemented full motion turns - turn_right_for(degrees), turn_left_for(degrees), turn_to(heading), turret_right_for(degs), turret_left_for(degs) and turret_to(bearing).  Examples are in green_control
 
 I assumed that you meant for your WallSensor class to subclass Sprite and changed it so it does
 

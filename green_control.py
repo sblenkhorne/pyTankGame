@@ -10,11 +10,11 @@ def action(my_tank):
     if key[K_t]:
         my_tank.turn_to(290)
     if key[K_r]:
-        my_tank.rotate_left()
+        my_tank.turret_left_for(135)
     if key[K_y]:
-        my_tank.rotate_right()
+        my_tank.turret_right_for(315)
     if key[K_g]:
-        my_tank.reverse()
+        my_tank.turret_to(20)
     if key[K_2]:
         my_tank.fire()
 

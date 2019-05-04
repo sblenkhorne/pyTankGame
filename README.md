@@ -47,6 +47,12 @@ my_tank.fire() - fires a shell in the current turret direction.  Has an approxim
 my_tank.rotate_left() - turns the turret 3 degrees to the left
 my_tank.rotate_right() - turns the turret 3 degrees to the right
 
+you can also execute multi-frame aiming movements:
+
+my_tank.turret_right_for(degrees)
+my_tank.turret_left_for(degrees)
+my_tank.turret_to(bearing)
+
 only one fire and one rotate command can be issued each frame.  Multiple calls will be ignored.
 
 If your tank is damaged movement is reduced to approximately 7 pixels, turn rate to 3 degrees and turret rotation to 2 degrees. If your tank is hit again it is destroyed.

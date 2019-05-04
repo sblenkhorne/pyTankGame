@@ -183,6 +183,7 @@ class Tank(pygame.sprite.Sprite):
         self.fired = False
         self.AIlevel = 0
         self.turn_target = 0
+        self.turret_aim_target = 0
     
     def turn_right_for(self,degs):
         if self.turn_target == 0: self.turn_target = degs
@@ -193,6 +194,16 @@ class Tank(pygame.sprite.Sprite):
     def turn_to(self,bearing):
         if self.turn_target != 0: return
         self.turn_target = ((180 + bearing - self.my_heading()) % 360) - 180
+    
+    def turret_right_for(self,degs):
+        if self.turret_aim_target == 0: self.turret_aim_target = degs
+    
+    def turret_left_for(self,degs):
+        if self.turret_aim_target == 0: self.turret_aim_target = -degs
+    
+    def turret_to(self,aim):
+        if self.turret_aim_target != 0: return
+        self.turret_aim_target = ((180 + aim - self.turret_direction()) % 360) - 180
     
     def set_enemy_lvl(self,lvl):
         for tank in tanks_sprites.sprites():
@@ -401,7 +412,7 @@ class Tank(pygame.sprite.Sprite):
                     break
         self.drawHealthBar()
         
-        # execute turn to target bearing
+        # execute turn and turret aim to target bearing
         if self.turn_target < 0:
             self.turn_left()
             self.turn_target += self.turn_rate
@@ -410,6 +421,14 @@ class Tank(pygame.sprite.Sprite):
             self.turn_right()
             self.turn_target -= self.turn_rate
             if self.turn_target < self.turn_rate: self.turn_target = 0
+        if self.turret_aim_target < 0:
+            self.rotate_left()
+            self.turret_aim_target += self.rotate_rate
+            if -self.turret_aim_target < self.rotate_rate: self.turret_aim_target = 0
+        if self.turret_aim_target > 0:
+            self.rotate_right()
+            self.turret_aim_target -= self.rotate_rate
+            if self.turret_aim_target < self.rotate_rate: self.turret_aim_target = 0
 
         # control input
         self.control.action(self)
