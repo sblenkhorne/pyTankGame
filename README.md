@@ -66,10 +66,8 @@ my_tank.my_heading() - returns your tank heading in degrees (0 is north, 90 is e
 my_tank.turret_direction() - returns the direction (in degrees) that your gun turret is pointed
 
 You also have proximity sensors, which allow you to check whether there are any obstacles in your immediate area, using this command:
-my_tank.checkSensors() - returns a dictionary with keys 'n','s','e','w'.  The values for these keys are True if there is a close wall in that direction and False if not.
+my_tank.checkSensors() - returns a dictionary with keys 'n','s','e','w','fl','f','fr','r','br','b','bl','l'.  The values for these keys are True if there is a close wall or tank in that direction and False if not.
 - example: mySensors = my_tank.checkSensors() -> returns {'n':True,'s':False,'w':False,'e':False} #This means there is an obstacle to the immediate north of your tank.
-
-Your tank also has "whisker" sensors which move and rotate with the tank.  These are read in a similar way by calling my_tank.pointSensors(), which returns a dictionary with keys 'fl','f','fr','r','br','b','bl','l' each having a True/False value. These sensors will detect enemy tanks in addition to walls.
 
 You can determine the exact position of any visible enemy tanks by calling my_tank.enemy_tanks().  This returns a list of locations (eg [ ( 100,200 ) , ( 350,125 ) ] ) of all visible enemies. They are not listed in any order except that the closest is always the first one listed. If no enemies are visible an empty list is returned.
 

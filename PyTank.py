@@ -91,22 +91,6 @@ class Player():
         self.alive = True
         Tank(self.number,self.dead_at)
 
-class wallSensor(pygame.sprite.Sprite):     # was this meant to subclass Sprite? 'cause it didn't
-    """docstring for ClassName"""
-    def __init__(self, tank, side):
-        pygame.sprite.Sprite.__init__(self)
-        if side=='w':
-            self.rect = Rect(tank.rect.topleft,(20,30))
-            self.color = (100,100,0)
-        elif side == 'e':
-            self.rect = Rect(tank.rect.topright,(20,30))
-            self.color = (255,0,0)
-        elif side == 'n':
-            self.rect = Rect(tank.rect.topleft,(30,20))
-            self.color = (0,255,0)
-        elif side == 's':
-            self.rect = Rect(tank.rect.bottomleft,(30,20))
-            self.color = (0,0,255)
 
 class Shot(pygame.sprite.Sprite):
     """Class to represent and control projectiles"""
@@ -164,10 +148,10 @@ class Tank(pygame.sprite.Sprite):
         self.radius = 35
         self.__health = 2
         self.turret = Turret(self,self.colour,self.heading)
-        self.nSensor = wallSensor(self,'n')
-        self.sSensor = wallSensor(self,'s')
-        self.wSensor = wallSensor(self,'w')
-        self.eSensor = wallSensor(self,'e')
+        self.nSensor = pygame.math.Vector2(0,-60)
+        self.sSensor = pygame.math.Vector2(0,60)
+        self.wSensor = pygame.math.Vector2(-60,0)
+        self.eSensor = pygame.math.Vector2(60,0)
         self.flSensor = pygame.math.Vector2(-45,-45)
         self.frSensor = pygame.math.Vector2(45,-45)
         self.blSensor = pygame.math.Vector2(-45,45)
@@ -230,17 +214,9 @@ class Tank(pygame.sprite.Sprite):
 
     def weapon_cooldown(self):
         return self.__cooldown
-    
+
     def checkSensors(self):
-        sensors = {'n':False,'s':False,'w':False,'e':False}
-        if pygame.sprite.spritecollideany(self.nSensor,enviro_sprites,collided=pygame.sprite.collide_circle): sensors['n']=True
-        if pygame.sprite.spritecollideany(self.sSensor,enviro_sprites,collided=pygame.sprite.collide_circle): sensors['s']=True
-        if pygame.sprite.spritecollideany(self.wSensor,enviro_sprites,collided=pygame.sprite.collide_circle): sensors['w']=True
-        if pygame.sprite.spritecollideany(self.eSensor,enviro_sprites,collided=pygame.sprite.collide_circle): sensors['e']=True
-        return sensors
-    
-    def pointSensors(self):
-        sensors = {'fl':False,'f':False,'fr':False,'r':False,'br':False,'b':False,'bl':False,'l':False}
+        sensors = {'n':False,'s':False,'w':False,'e':False,'fl':False,'f':False,'fr':False,'r':False,'br':False,'b':False,'bl':False,'l':False}
         for object in enviro_sprites.sprites() + tanks_sprites.sprites():
             if object == self: continue
             if object.rect.collidepoint(self.flSensor + self.rect.center): sensors['fl'] = True
@@ -251,6 +227,10 @@ class Tank(pygame.sprite.Sprite):
             if object.rect.collidepoint(self.rSensor + self.rect.center): sensors['r'] = True
             if object.rect.collidepoint(self.bSensor + self.rect.center): sensors['b'] = True
             if object.rect.collidepoint(self.lSensor + self.rect.center): sensors['l'] = True
+            if object.rect.collidepoint(self.nSensor + self.rect.center): sensors['n'] = True
+            if object.rect.collidepoint(self.sSensor + self.rect.center): sensors['s'] = True
+            if object.rect.collidepoint(self.wSensor + self.rect.center): sensors['w'] = True
+            if object.rect.collidepoint(self.eSensor + self.rect.center): sensors['e'] = True
         return sensors
 
     def enemy_tanks(self):
@@ -430,15 +410,30 @@ class Tank(pygame.sprite.Sprite):
             self.turret_aim_target -= self.rotate_rate
             if self.turret_aim_target < self.rotate_rate: self.turret_aim_target = 0
 
+        #       ************************** visibility and sensor testing visuals can be removed *********************
+        
+#        if self.player_number == 0:
+#            area = pygame.display.get_surface()
+#            pygame.draw.line(area,(100,100,100),self.rect.center,self.rect.center+self.flSensor,3)
+#            pygame.draw.line(area,(100,100,255),self.rect.center,self.rect.center+self.fSensor,3)
+#            pygame.draw.line(area,(100,255,100),self.rect.center,self.rect.center+self.frSensor,3)
+#            pygame.draw.line(area,(100,255,255),self.rect.center,self.rect.center+self.rSensor,3)
+#            pygame.draw.line(area,(255,100,100),self.rect.center,self.rect.center+self.brSensor,3)
+#            pygame.draw.line(area,(255,100,255),self.rect.center,self.rect.center+self.bSensor,3)
+#            pygame.draw.line(area,(255,255,100),self.rect.center,self.rect.center+self.blSensor,3)
+#            pygame.draw.line(area,(255,255,255),self.rect.center,self.rect.center+self.lSensor,3)
+#            seen = self.enemy_tanks()
+#            if seen: pygame.draw.line(area,(0,255,0),self.rect.center,seen.pop(0),5)
+#            if seen:
+#                for tank in seen: pygame.draw.line(area,(255,0,0),self.rect.center,tank,5)
+
+            #       ******************************************************************************************************
+
         # control input
         self.control.action(self)
 
-        # move turret & sensors
+        # move turret
         self.turret.rect.center = self.rect.center
-        self.nSensor.rect.center = (self.rect.center[0], self.rect.center[1] - 25)
-        self.sSensor.rect.center = (self.rect.center[0], self.rect.center[1] + 25)
-        self.wSensor.rect.center = (self.rect.center[0]-25, self.rect.center[1])
-        self.eSensor.rect.center = (self.rect.center[0]+25, self.rect.center[1])
         
         # clear action flags
         self.moved = False
