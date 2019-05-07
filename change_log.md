@@ -1,47 +1,38 @@
-Still to do / ideas to try:
-
-call to detect shots in play
-
-auto-tournament play
+Full tournament and practice setup:
 
 
+Tournament vs Practice is selected by a global boolean (line 10)
 
-These are things changed or implemented since we last talked:
 
-implemented full motion turns - turn_right_for(degrees), turn_left_for(degrees), turn_to(heading), turret_right_for(degs), turret_left_for(degs) and turret_to(bearing).  Examples are in green_control
+For practice:
 
-I assumed that you meant for your WallSensor class to subclass Sprite and changed it so it does
+The student AI must be in a .py file in the main directory and have "control" in the filename
 
-I only had the old tank and turret images in four colours, I'm assuming you used a new image to make the mask simpler and faster?
+The AI they are practicing against must be called enemy_AI.py and be in the main directory
 
-walls can be destroyed by shooting them. To enable this add a second parameter of False to the Wall constructor
+The student will be asked for a number of players (2-4), all enemies use the enemy_AI.py file and the AI level set by them
 
-Can now use from two to four players, blue, green, orange and red. If a control script assigns an AI level it assigned to ALL other tanks.  Can set a hardcoded number of players or user input.
+Each tank has one life only and every time a single tank remains the session is reset with a new map
 
-Added Player() class.  This track lives and kills and also allows complete destruction of a killed tank (to prevent invisible corpses) while maintain continuity of the player.  Currently a tank respawning could intersect with another tank if it moves into the dead tanks location ...
+will play until pygame window closed
 
-Improvements to calculating line of sight.  Better intersection detection and only walls inside a bounding rectangle defined by the line between tanks are checked.  Faster.
 
-Left your sensors alone completely
 
-Changes to the names of some tank method calls ... sorry!
+For tournament:
 
-Added point sensors (8 in total) that move and rotate with tank
+each contestant AI script (2-4 players) must be placed in the "tank_AI" directory and be in a file of any name ending in .py
 
-added getter for weapon cooldown remaining
+No other .py files can be in this directory
 
-clear shot and enemy location calls gone, replaced with enemy_tanks() which returns a list of coordinate tuples for the location of any visible enemies.  The closest is listed as element 0 of the list.  No visible tanks returns empty list
+each player is given 2 lives, when a tank is killed it will respawn in a random spawn location that is not currently occupied
 
-added reverse()
+when only one tank remains the winner is declared
 
-cleaned up damage code and speed and turn rates are now actually affected by damage
+the winner declaration will display until the pygame window is closed
 
-lives and kills are displayed with name and health bar
 
-cleaned up maze set-up a little
 
-moved countdown out of game loop to its own function
+NOTE:
 
-cleaned up main and moved code out of game loop that really belonged elsewhere
+I know we disucssed having the undestroyed tank respawn on a kill as well but that didn't work well or make much sense with more than two tanks so I just implemented having the dead tank respawn at a random valid spawn point
 
-currently gives each player three lives and quits when only one player left.  All on same maze.

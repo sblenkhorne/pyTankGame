@@ -4,8 +4,49 @@
 # November 2018
 
 
-import pygame, os, random, blue_control, green_control, orange_control, red_control, mapGen
+# *********************** IMPORTANT SETUP INFORMATION *************************
+
+# set this to True for tournament play, shoud be False for student copies
+tournament = True
+
+# for practice:
+# student AI's must be in same folder as this PyTank.py and MUST have "control" in the filename
+# the enemy AI that the students practice against must be in this folder and MUST be named "enemy_AI.py"
+
+# for tournament:
+# each contestant should have an AI file ending in .py
+# there must be between 2 and 4 of these files in the folder "tank_AI" and NO OTHER FILES
+# it does not matter what these files are named as long as they are unique
+
+# ******************************************************************************
+
+
+
+import pygame, os, random, mapGen, importlib, enemy_AI
 from pygame.locals import *
+
+# these must be above dynamic loading code
+random.seed()
+num_players = 0     # do NOT change this initial value - EVER!!!!
+control_files = []
+
+
+# this code dynamically loads the control files
+if tournament:
+    controllers = [x[:-3] for x in os.listdir("tank_AI") if x.endswith("py")]
+    random.shuffle(controllers)
+    num_players = len(controllers)
+    if not (2 <= num_players <= 4):
+        print("ERROR - must be between 2 and 4 AI files in 'tank_AI' folder")
+        quit()
+    for controller in controllers: control_files.append(importlib.import_module("tank_AI."+controller))
+
+else:
+    while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all us same AI)
+        num_players = int(input("Please enter number of players (2-4):"))
+    control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
+    for _ in range(num_players-1): control_files.append(enemy_AI)
+
 
 # Global sprite groups and other globals
 all_sprites = pygame.sprite.LayeredUpdates()
@@ -13,8 +54,9 @@ shots = [pygame.sprite.Group(),pygame.sprite.Group(),pygame.sprite.Group(),pygam
 enviro_sprites = pygame.sprite.Group()
 tanks_sprites = pygame.sprite.Group()
 tank_colours = ['blue','green','orange','red']
-control_files = [blue_control,green_control,orange_control,red_control]
 players = []
+
+
 
 # helper function for visibility sensor
 def intersect(p1,p2,p3,p4):
@@ -69,27 +111,27 @@ class Wall(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft = (position[0],position[1]))
         self.permanent = perm
 
+
 class Player():
     def __init__(self,number):
         self.number = number
-        self.colour = tank_colours[number]
         self.alive = True
         self.respawn_timer = 0
-        self.lives = 3
+        if tournament: self.lives = 2
+        else: self.lives = 1
         self.kills = 0
 
-    def die(self,position):
-        self.dead_at = position
+    def die(self):
         self.alive = False
         self.respawn_timer = 60
         self.lives -= 1
 
-    def respawn(self):
+    def respawn(self,spawns):
         if self.lives == 0: return True
         self.respawn_timer -= 1
         if self.respawn_timer: return
         self.alive = True
-        Tank(self.number,self.dead_at)
+        Tank(self.number,spawns[:])
 
 
 class Shot(pygame.sprite.Sprite):
@@ -125,18 +167,20 @@ class Turret(pygame.sprite.Sprite):
 
 class Tank(pygame.sprite.Sprite):
     """Class to represent and control tanks"""
-    def __init__(self,number,position):
+    def __init__(self,number,spawns):
         pygame.sprite.Sprite.__init__(self)
         self.colour = tank_colours[number]
         self.player_number = number
         all_sprites.add(self, layer = 0)
-        tanks_sprites.add(self)
         image_file = self.colour + 'Tank.png'
         self.tankFireSound = pygame.mixer.Sound("sounds/tankFire.wav")
         self.tankExplosion = pygame.mixer.Sound("sounds/tankExplosion.wav")
         self.base_image = load_image(image_file,75,75)
         self.image = self.base_image
-        self.rect = self.image.get_rect(center=position)
+        self.rect = self.image.get_rect(center=spawns.pop(random.randint(0,len(spawns)-1)))
+        while pygame.sprite.spritecollideany(self, tanks_sprites, collided = pygame.sprite.collide_rect):
+            self.rect = self.image.get_rect(center=spawns.pop(random.randint(0,len(spawns)-1)))
+        tanks_sprites.add(self)
         self.speed = 10
         self.turn_rate = 5
         self.rotate_rate = 3
@@ -386,7 +430,7 @@ class Tank(pygame.sprite.Sprite):
             if shot:
                 shot.kill()
                 if self.take_damage():
-                    players[self.player_number].die(self.rect.center)
+                    players[self.player_number].die()
                     players[shots.index(shot_group)].kills += 1
                     self.kill()
                     break
@@ -409,25 +453,6 @@ class Tank(pygame.sprite.Sprite):
             self.rotate_right()
             self.turret_aim_target -= self.rotate_rate
             if self.turret_aim_target < self.rotate_rate: self.turret_aim_target = 0
-
-        #       ************************** visibility and sensor testing visuals can be removed *********************
-        
-#        if self.player_number == 0:
-#            area = pygame.display.get_surface()
-#            pygame.draw.line(area,(100,100,100),self.rect.center,self.rect.center+self.flSensor,3)
-#            pygame.draw.line(area,(100,100,255),self.rect.center,self.rect.center+self.fSensor,3)
-#            pygame.draw.line(area,(100,255,100),self.rect.center,self.rect.center+self.frSensor,3)
-#            pygame.draw.line(area,(100,255,255),self.rect.center,self.rect.center+self.rSensor,3)
-#            pygame.draw.line(area,(255,100,100),self.rect.center,self.rect.center+self.brSensor,3)
-#            pygame.draw.line(area,(255,100,255),self.rect.center,self.rect.center+self.bSensor,3)
-#            pygame.draw.line(area,(255,255,100),self.rect.center,self.rect.center+self.blSensor,3)
-#            pygame.draw.line(area,(255,255,255),self.rect.center,self.rect.center+self.lSensor,3)
-#            seen = self.enemy_tanks()
-#            if seen: pygame.draw.line(area,(0,255,0),self.rect.center,seen.pop(0),5)
-#            if seen:
-#                for tank in seen: pygame.draw.line(area,(255,0,0),self.rect.center,tank,5)
-
-            #       ******************************************************************************************************
 
         # control input
         self.control.action(self)
@@ -491,46 +516,55 @@ def main():
     # initialization and setup
     pygame.init()
     pygame.mixer.pre_init(44100, 16, 2, 4096)
-    random.seed()
     screen = pygame.display.set_mode((1200, 900))
     pygame.display.set_caption('PyTank')
     background = load_image('sand.png',128,128)
     maze_maps = mapGen.getMaps()
-    num_players = 4     # set to 2-4 or to 0 for user input
-    while num_players < 2 or num_players > 4:
-        num_players = int(input("Please enter number of players (2-4):"))
     
-    # initial tank set-up
-    spawns = set_up_level(maze_maps)
-    for i in range(num_players):
-        players.append(Player(i))
-        spawn = spawns.pop(random.randint(0,len(spawns)-1))
-        Tank(i,spawn)
-
-    # onscreen countdown to game start
-    countdown(3, screen, background)
-
-    # game loop
     while True:
-        start_time = pygame.time.get_ticks()
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                return
+        # initial tank set-up
+        players.clear()
+        all_sprites.empty()
+        enviro_sprites.empty()
+        spawns = set_up_level(maze_maps)
+        for i in range(num_players):
+            players.append(Player(i))
+            Tank(i,spawns[:])
 
-        out_of_play = 0
-        for player in players:
-            if not player.alive:
-                if player.respawn(): out_of_play += 1
-        if out_of_play >= num_players - 1: break
+        # onscreen countdown to game start
+        if tournament: countdown(3, screen, background)
 
-        drawBackground(screen,background)
-        all_sprites.update()
-        all_sprites.draw(screen)
-        pygame.display.flip()
-        
-        frame_time = pygame.time.get_ticks() - start_time
-        if frame_time < 25:
-            pygame.time.delay(25-frame_time)
+        # game loop
+        while True:
+            start_time = pygame.time.get_ticks()
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    return
+
+            out_of_play = 0
+            for player in players:
+                if not player.alive:
+                    if player.respawn(spawns): out_of_play += 1
+            if out_of_play >= num_players - 1: break
+
+            drawBackground(screen,background)
+            all_sprites.update()
+            all_sprites.draw(screen)
+            pygame.display.flip()
+            
+            frame_time = pygame.time.get_ticks() - start_time
+            if frame_time < 25:
+                pygame.time.delay(25-frame_time)
+
+        if tournament:
+            win_string = tanks_sprites.sprites()[0].name + " is the winner!!"
+            while True:
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        return
+                drawBackground(screen,background)
+                all_sprites.draw(screen)
+                message_display(win_string,(0,0,0),75)
 
 
 if __name__ == '__main__': main()

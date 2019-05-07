@@ -7,7 +7,11 @@ You control your tank by issuing orders to your driver and your gunner.
 
 To Run Practice Mode
 -----------------------------------------------------------------
-Open and edit the code in the blue_control.py script. DO NOT remove the action() function. This is the function that gets called once per frame. Put all of your code, algorithms and logic in this function. Although, if you want to create helper functions that are called from within the action() function, that works just as well.
+Create a .py file in the game folder. It can have any filename as long as 'control' is in the filename. You MUST have the action() function in your file. This is the function that gets called once per frame. Put all of your code, algorithms and logic in this function. Although, if you want to create helper functions that are called from within the action() function, that works just as well.
+
+Include a call to set the enemy AI level in your code. (see below)
+
+You will be asked how many (2-4) tanks you wish to practice with in the arena.
 
 To run your program, simply open and run PyTank.py. 
 
@@ -75,6 +79,6 @@ There are two other functions you can use:
 my_tank.damaged() returns True if your tank has taken a hit
 my_tank.cooldown() returns the number of frames before your weapon can be fired again
 
-Keep in mind that these commands are all relative to the center of your tank and the center of the enemy tanks.  You may not see a wall in a certain direction but this doesn't guarentee that some part of your tank won't hit if you travel in that direction.  You gun sight may see the other tank but that doesn't guarantee that a shot made will reach it, your shell has size and may clip a wall even if it doesn't block your view.  Give your driver and gunner a margin of error to be sure things work the way you intend!
+Keep in mind that these commands are all relative to the center of your tank and the center of the enemy tanks.  You may not see a wall in a certain direction but this doesn't guarentee that some part of your tank won't hit if you travel in that direction.  Your gun sight may see the other tank but that doesn't guarantee that a shot made will reach it, your shell has size and may clip a wall even if it doesn't block your view.  Give your driver and gunner a margin of error to be sure things work the way you intend!
 
-Each tank in the arena has three lives.  The number of lives remaining is shown to the left of the healthbar.  The number to the right is your total kills.  When only one player has any remaining lives the arena will close.
+Each tank in the arena has one life.  The number of lives remaining is shown to the left of the healthbar.  The number to the right is your total kills.  When only one player has any remaining lives the arena will reset with a new map.
