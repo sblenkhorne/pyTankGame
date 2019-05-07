@@ -6,7 +6,7 @@ Tournament vs Practice is selected by a global boolean (line 10)
 
 For practice:
 
-The student AI must be in a .py file in the main directory and have "control" in the filename
+The student AI must be in a .py file in the main directory and have "control" in the filename, no other filename can contain 'control'
 
 The AI they are practicing against must be called enemy_AI.py and be in the main directory
 

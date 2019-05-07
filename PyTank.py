@@ -10,7 +10,7 @@
 tournament = True
 
 # for practice:
-# student AI's must be in same folder as this PyTank.py and MUST have "control" in the filename
+# student AI's must be in same folder as this PyTank.py and MUST have "control" in the filename, and be the only such file
 # the enemy AI that the students practice against must be in this folder and MUST be named "enemy_AI.py"
 
 # for tournament:

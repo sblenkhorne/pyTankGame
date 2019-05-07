@@ -7,7 +7,7 @@ You control your tank by issuing orders to your driver and your gunner.
 
 To Run Practice Mode
 -----------------------------------------------------------------
-Create a .py file in the game folder. It can have any filename as long as 'control' is in the filename. You MUST have the action() function in your file. This is the function that gets called once per frame. Put all of your code, algorithms and logic in this function. Although, if you want to create helper functions that are called from within the action() function, that works just as well.
+Create a .py file in the game folder. It can have any filename as long as 'control' is in the filename, but make sure NO other filename includes 'control'. You MUST have the action() function in your file. This is the function that gets called once per frame. Put all of your code, algorithms and logic in this function. Although, if you want to create helper functions that are called from within the action() function, that works just as well.
 
 Include a call to set the enemy AI level in your code. (see below)
 
