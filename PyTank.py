@@ -7,7 +7,7 @@
 # *********************** IMPORTANT SETUP INFORMATION *************************
 
 # set this to True for tournament play, shoud be False for student copies
-tournament = True
+tournament = False
 
 # for practice:
 # student AI's must be in same folder as this PyTank.py and MUST have "control" in the filename, and be the only such file
@@ -22,7 +22,7 @@ tournament = True
 
 
 
-import pygame, os, random, mapGen, importlib, enemy_AI
+import pygame, os, random, mapGen, importlib, enemy_AI, threading
 from pygame.locals import *
 
 # these must be above dynamic loading code
@@ -42,7 +42,7 @@ if tournament:
     for controller in controllers: control_files.append(importlib.import_module("tank_AI."+controller))
 
 else:
-    while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all us same AI)
+    while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
         num_players = int(input("Please enter number of players (2-4):"))
     control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
     for _ in range(num_players-1): control_files.append(enemy_AI)
@@ -171,7 +171,6 @@ class Tank(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.colour = tank_colours[number]
         self.player_number = number
-        all_sprites.add(self, layer = 0)
         image_file = self.colour + 'Tank.png'
         self.tankFireSound = pygame.mixer.Sound("sounds/tankFire.wav")
         self.tankExplosion = pygame.mixer.Sound("sounds/tankExplosion.wav")
@@ -504,6 +503,7 @@ def countdown(count, screen, background):
             if event.type == QUIT:
                 return
         drawBackground(screen,background)
+        tanks_sprites.draw(screen)
         all_sprites.draw(screen)
         message_display(count,(0,0,0),200)
         count -= 1
@@ -526,6 +526,7 @@ def main():
         players.clear()
         all_sprites.empty()
         enviro_sprites.empty()
+        tanks_sprites.empty()
         spawns = set_up_level(maze_maps)
         for i in range(num_players):
             players.append(Player(i))
@@ -548,7 +549,14 @@ def main():
             if out_of_play >= num_players - 1: break
 
             drawBackground(screen,background)
+            ts = []
+            for tank in tanks_sprites.sprites():
+                t = threading.Thread(target = tank.update)
+                ts.append(t)
+                t.start()
+            for t in ts: t.join()
             all_sprites.update()
+            tanks_sprites.draw(screen)
             all_sprites.draw(screen)
             pygame.display.flip()
             

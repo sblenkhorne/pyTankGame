@@ -45,6 +45,8 @@ my_tank.turn_to(heading) - turns at the current rate of turn in the shortest dir
 
 only one forward and one turn command can be issued each frame.  If multiple calls are made to forward or turns they will be ignored.
 
+forward() and reverse() both return False if the movement could not be completed because of a collision.
+
 You gunner can be commanded to rotate the gun turret or fire the gun using these commands:
 
 my_tank.fire() - fires a shell in the current turret direction.  Has an approximate two second cool down
