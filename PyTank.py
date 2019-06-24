@@ -542,7 +542,7 @@ def main():
             Tank(i,spawns[:])
 
         # onscreen countdown to game start
-        if tournament: countdown(3, screen, background)
+        if tournament: countdown(0, screen, background)
 
         # game loop
         while True:
