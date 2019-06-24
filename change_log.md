@@ -34,5 +34,7 @@ the winner declaration will display until the pygame window is closed
 
 NOTE:
 
-I know we disucssed having the undestroyed tank respawn on a kill as well but that didn't work well or make much sense with more than two tanks so I just implemented having the dead tank respawn at a random valid spawn point
+I know we discussed having the undestroyed tank respawn on a kill as well but that didn't work well or make much sense with more than two tanks so I just implemented having the dead tank respawn at a random valid spawn point.
+
+
 

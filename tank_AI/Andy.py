@@ -2,6 +2,7 @@ import pygame
 from pygame import *
 
 def action(my_tank):
+    my_tank.set_Name("Andy")
     pos = my_tank.my_position()
     lvl = my_tank.my_AI_level()
     heading = my_tank.my_heading()

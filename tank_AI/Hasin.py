@@ -2,6 +2,7 @@ import pygame
 from pygame import *
 
 def action(my_tank):
+    my_tank.set_Name("Hasin")
     key = pygame.key.get_pressed()
     if key[K_z]:
         my_tank.turn_left()

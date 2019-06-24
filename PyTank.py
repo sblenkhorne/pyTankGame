@@ -7,7 +7,7 @@
 # *********************** IMPORTANT SETUP INFORMATION *************************
 
 # set this to True for tournament play, shoud be False for student copies
-tournament = False
+tournament = True
 
 # for practice:
 # student AI's must be in same folder as this PyTank.py and MUST have "control" in the filename, and be the only such file
@@ -30,16 +30,27 @@ random.seed()
 num_players = 0     # do NOT change this initial value - EVER!!!!
 control_files = []
 
+def printOptions(options):
+    for x in range(len(options)):
+        print("{}) {}".format(x+1, options[x]))
+
 
 # this code dynamically loads the control files
 if tournament:
     controllers = [x[:-3] for x in os.listdir("tank_AI") if x.endswith("py")]
-    random.shuffle(controllers)
-    num_players = len(controllers)
-    if not (2 <= num_players <= 4):
-        print("ERROR - must be between 2 and 4 AI files in 'tank_AI' folder")
-        quit()
-    for controller in controllers: control_files.append(importlib.import_module("tank_AI."+controller))
+    while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
+        num_players = int(input("Please enter number of players (2-4):"))
+    players = []
+    while len(players) < num_players:
+        printOptions(controllers)
+        try:
+            choice = int(input("Pick your next competitor: "))
+            players.append(controllers.pop(choice-1))
+        except:
+            print("That's not a valid choice.")
+    
+    random.shuffle(players)
+    for controller in players: control_files.append(importlib.import_module("tank_AI."+controller))
 
 else:
     while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
@@ -55,8 +66,6 @@ enviro_sprites = pygame.sprite.Group()
 tanks_sprites = pygame.sprite.Group()
 tank_colours = ['blue','green','orange','red']
 players = []
-
-
 
 # helper function for visibility sensor
 def intersect(p1,p2,p3,p4):
@@ -571,7 +580,7 @@ def main():
                     if event.type == QUIT:
                         return
                 drawBackground(screen,background)
-                all_sprites.draw(screen)
+                # all_sprites.draw(screen)
                 message_display(win_string,(0,0,0),75)
 
 
