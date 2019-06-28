@@ -47,7 +47,7 @@ only one forward and one turn command can be issued each frame.  If multiple cal
 
 forward() and reverse() both return False if the movement could not be completed because of a collision.
 
-You gunner can be commanded to rotate the gun turret or fire the gun using these commands:
+Your gunner can be commanded to rotate the gun turret or fire the gun using these commands:
 
 my_tank.fire() - fires a shell in the current turret direction.  Has an approximate two second cool down
 my_tank.rotate_left() - turns the turret 3 degrees to the left

@@ -1,3 +1,5 @@
+# A simple keyboard control for a tank including display of available information
+
 import pygame
 from pygame import *
 

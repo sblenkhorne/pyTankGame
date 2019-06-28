@@ -1,7 +1,22 @@
-#! /usr/bin/env python3
-
-# PyTank - By Andrew Groeneveldt and Scott Blenkhorne
-# November 2018
+#Copyright (c) 2019 Andrew Groeneveldt and Scott Blenkhorne
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in all
+#copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#SOFTWARE.
 
 
 # *********************** IMPORTANT SETUP INFORMATION *************************
@@ -15,8 +30,11 @@ tournament = True
 
 # for tournament:
 # each contestant should have an AI file ending in .py
-# there must be between 2 and 4 of these files in the folder "tank_AI" and NO OTHER FILES
+# place these files in the folder "tank_AI" and NO OTHER FILES
 # it does not matter what these files are named as long as they are unique
+
+# the sub-folders titled "assets", "mapsRaw", and "sounds" must be included in this folder
+# as well as the script titled "mapGen.py"
 
 # ******************************************************************************
 
@@ -67,8 +85,14 @@ tanks_sprites = pygame.sprite.Group()
 tank_colours = ['blue','green','orange','red']
 players = []
 
-# helper function for visibility sensor
+
 def intersect(p1,p2,p3,p4):
+    """tests for intersection of two line segments, caution does not work well with parallel line
+        takes: the endpoints of the line segments to test at pairs (x,y)
+                segment 1 defined by p1 and p2, segment 2 by p3 and p4
+        returns: a boolean value of if the lines intersect at any point
+        notes: behaviour for parallel lines is incorrect but this does not impact this program
+                as is explained in the notes accompanying the method calling this code"""
     x1,y1 = p1
     x2,y2 = p2
     x3,y3 = p3
@@ -86,6 +110,7 @@ def intersect(p1,p2,p3,p4):
     if not (min(x3,x4) <= dx/d <= max(x3,x4)) or not (min(y3,y4) <= dy/d <= max(y3,y4)): return False
     return True
 
+
 def load_image(filename,x=None,y=None):
     """Load an image from file
         takes: an image filename and desired dimensions
@@ -96,6 +121,7 @@ def load_image(filename,x=None,y=None):
     image = pygame.image.load(os.path.join("assets", filename)).convert_alpha()
     if x and y: image = pygame.transform.smoothscale(image,(x,y))
     return image
+
 
 def rotate_ip(self, angle):
     """ Rotate an image about its center
@@ -112,6 +138,9 @@ def rotate_ip(self, angle):
 class Wall(pygame.sprite.Sprite):
     """Class to represent obstacles"""
     def __init__(self,position,perm = True):
+        """ Wall class constructor
+            takes: the position of the wall block (as a pair) and a boolean decribing if the wall can be destroyed in play
+            assumes: stoneWall.png is in assets subfolder"""
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 0)
         enviro_sprites.add(self)
@@ -122,7 +151,10 @@ class Wall(pygame.sprite.Sprite):
 
 
 class Player():
+    """Class to represent a player in the game"""
     def __init__(self,number):
+        """Player class constructor
+            takes: a unique identifier for this player as an integer"""
         self.number = number
         self.alive = True
         self.respawn_timer = 0
@@ -131,11 +163,13 @@ class Player():
         self.kills = 0
 
     def die(self):
+        """method called to record the death of a tank belonging to this player"""
         self.alive = False
         self.respawn_timer = 60
         self.lives -= 1
 
     def respawn(self,spawns):
+        """method to instantiate a new tank for this player"""
         if self.lives == 0: return True
         self.respawn_timer -= 1
         if self.respawn_timer: return
@@ -146,6 +180,9 @@ class Player():
 class Shot(pygame.sprite.Sprite):
     """Class to represent and control projectiles"""
     def __init__(self, position, heading):
+        """Shot class constructor
+            takes: the starting position of the shot (as a pair) and a heading (as a vector) the shot will travel along
+            assumes: bullet.png is in assets subfolder"""
         pygame.sprite.Sprite.__init__(self)
         self.base_image = load_image('bullet.png',15,15)
         self.image = self.base_image
@@ -156,7 +193,7 @@ class Shot(pygame.sprite.Sprite):
         self.rect.move_ip(self.heading)
     
     def update(self):
-        """ update shot position """
+        """ update shot position and process collision with walls"""
         self.rect.move_ip(self.heading)
         wall_hit = pygame.sprite.spritecollideany(self, enviro_sprites)
         if wall_hit:
@@ -164,8 +201,11 @@ class Shot(pygame.sprite.Sprite):
             self.kill()
 
 class Turret(pygame.sprite.Sprite):
-    """Class to represent gun turrets"""
+    """Class to represent gun turrets associated with a tank"""
     def __init__(self,tank,colour,heading):
+        """Turret class contructor
+            takes: a tank object the turret belongs to, a colour (as a string) and an intial aim heading (as a vector)
+            assumes: the appropriately named image file is in the assets subfolder"""
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 1)
         image_file = colour + 'Turret.png'
@@ -175,8 +215,11 @@ class Turret(pygame.sprite.Sprite):
         self.heading = heading * 2
 
 class Tank(pygame.sprite.Sprite):
-    """Class to represent and control tanks"""
+    """Class to represent and control tanks, this is a large and complex class"""
     def __init__(self,number,spawns):
+        """Tank class constructor
+            takes: an integer ID of the player owning this tank and a list of pairs representing possible spawn points
+            assumes: the precense of support files in subdirectories"""
         pygame.sprite.Sprite.__init__(self)
         self.colour = tank_colours[number]
         self.player_number = number
@@ -221,53 +264,72 @@ class Tank(pygame.sprite.Sprite):
         self.turn_target = 0
         self.turret_aim_target = 0
     
+    # ********** methods intended to be called by player AI's ***********
+    
     def turn_right_for(self,degs):
+        """continue to turn right at current rate of turn until specified degrees are reached"""
         if self.turn_target == 0: self.turn_target = degs
     
     def turn_left_for(self,degs):
+        """continue to turn left at current rate of turn until specified degrees are reached"""
         if self.turn_target == 0: self.turn_target = -degs
     
     def turn_to(self,bearing):
+        """continue to turn at present rate of turn until heading is specified bearing"""
         if self.turn_target != 0: return
         self.turn_target = ((180 + bearing - self.my_heading()) % 360) - 180
     
     def turret_right_for(self,degs):
+        """continue to turn turret right at current rate of turn until specified degrees are reached"""
         if self.turret_aim_target == 0: self.turret_aim_target = degs
     
     def turret_left_for(self,degs):
+        """continue to turn turret left at current rate of turn until specified degrees are reached"""
         if self.turret_aim_target == 0: self.turret_aim_target = -degs
     
     def turret_to(self,aim):
+        """continue to turn turret at present rate of turn until heading is specified aim"""
         if self.turret_aim_target != 0: return
         self.turret_aim_target = ((180 + aim - self.turret_direction()) % 360) - 180
     
     def set_enemy_lvl(self,lvl):
+        """set value for practice AI difficulty (as integer
+            assumes: enemy AI has implemented variable difficulty"""
         for tank in tanks_sprites.sprites():
             if self.player_number == tank.player_number: continue
             tank.AIlevel = lvl
 
     def set_Name(self, newName):
+        """sets the displayed name on the tank sprite in game"""
         self.name = newName
     
     def damaged(self):
+        """returns a boolean indicating if the tank has taken damage"""
         return self.__health != 2
 
     def my_position(self):
+        """returnd a pair decribing the location of the calling tank"""
         return self.rect.center
 
     def my_AI_level(self):
+        """returns the cuurent specified AI difficulty level as an integer"""
         return self.AIlevel
 
     def my_heading(self):
+        """returns the cuurent heading of the tank as an integer number of degrees"""
         return (360-((round(int(self.heading.angle_to(pygame.math.Vector2(0,-1)))<<1,-1))>>1))%360
     
     def turret_direction(self):
+        """returns the cuurent aim of the turret as an integer number of degrees"""
         return (360-((round(int(self.turret.heading.angle_to(pygame.math.Vector2(0,-1)))<<1,-1))>>1))%360
 
     def weapon_cooldown(self):
+        """returns an integer indicating the remaining frames before the tank can fire again"""
         return self.__cooldown
 
     def checkSensors(self):
+        """returns a dictionary with directional keys and boolean values of if the tank senses a wall or other object
+            dictionary has 12 keys, 8 directions relative to tank heading and 4 fixed on grid directions"""
         sensors = {'n':False,'s':False,'w':False,'e':False,'fl':False,'f':False,'fr':False,'r':False,'br':False,'b':False,'bl':False,'l':False}
         for object in enviro_sprites.sprites() + tanks_sprites.sprites():
             if object == self: continue
@@ -286,7 +348,7 @@ class Tank(pygame.sprite.Sprite):
         return sensors
 
     def enemy_tanks(self):
-        # returns a list of positions of visible enemy tanks, closest in index 0 (rest NOT in order!!)
+        """returns a list of positions of visible enemy tanks (as pairs), closest in index 0 (rest NOT in order!!)"""
         visible = []
         closest = 2250000
         for tank in tanks_sprites.sprites():
@@ -296,6 +358,8 @@ class Tank(pygame.sprite.Sprite):
             miny = min(self.rect.topleft[1],tank.rect.topleft[1])
             maxx = max(self.rect.bottomright[0],tank.rect.bottomright[0])
             maxy = max(self.rect.bottomright[1],tank.rect.bottomright[1])
+            # calls intersection code to see if line from tank to tank crosses segments making an X in wall blocks
+            # thus even if one segment is parallel the other won't be
             for wall in enviro_sprites.sprites():
                 if minx < wall.rect.center[0] < maxx and miny < wall.rect.center[1] < maxy:
                     if intersect(self.rect.center,tank.rect.center,wall.rect.topleft,wall.rect.bottomright):
@@ -314,6 +378,8 @@ class Tank(pygame.sprite.Sprite):
         return visible
 
     def forward(self):
+        """attempts to move tank forward at current speed along current heading
+            returns True if movement completed and False if not"""
         if self.moved: return False
         self.moved = True
         self.rect.move_ip(self.heading)
@@ -328,6 +394,8 @@ class Tank(pygame.sprite.Sprite):
         return True
 
     def reverse(self):
+        """attempts to move tank backwards at current speed along current heading
+            returns True if movement completed and False if not"""
         if self.moved: return False
         self.moved = True
         self.rect.move_ip(-self.heading)
@@ -342,6 +410,7 @@ class Tank(pygame.sprite.Sprite):
         return True
 
     def turn_left(self):
+        """turn tank left at current rate of turn"""
         if self.turned: return
         self.turned = True
         self.heading.rotate_ip(-self.turn_rate)
@@ -357,6 +426,7 @@ class Tank(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
     
     def turn_right(self):
+        """turn tank right at current rate of turn"""
         if self.turned: return
         self.turned = True
         self.heading.rotate_ip(self.turn_rate)
@@ -372,18 +442,21 @@ class Tank(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
     
     def rotate_left(self):
+        """turn turret left at current rate of turn"""
         if self.rotated: return
         self.rotated = True
         self.turret.heading.rotate_ip(-self.rotate_rate)
         self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -1)))
     
     def rotate_right(self):
+        """turn turret right at current rate of turn"""
         if self.rotated: return
         self.rotated = True
         self.turret.heading.rotate_ip(self.rotate_rate)
         self.turret.image = rotate_ip(self.turret, self.turret.heading.angle_to(pygame.math.Vector2(0, -1)))
 
     def fire(self):
+        """attempts to fire the weapon if cooldown completed"""
         if self.fired: return
         if self.__cooldown != 0: return
         self.fired = True
@@ -393,7 +466,11 @@ class Tank(pygame.sprite.Sprite):
         self.__cooldown = 50
         pygame.mixer.Sound.play(self.tankFireSound)
     
+    # *********** end of player callable methods *****************************
+    
     def take_damage(self):
+        """called if collision detected between tank and enemy shot
+            returns True if this is a killing shot and False if it is not"""
         self.__health -= 1
         pygame.mixer.Sound.play(self.tankExplosion)
         if self.__health == 0: return True
@@ -403,10 +480,12 @@ class Tank(pygame.sprite.Sprite):
         return False
     
     def kill(self):
+        """wrapper method to kill both the tank and its turret"""
         self.turret.kill()
         pygame.sprite.Sprite.kill(self)
     
     def drawHealthBar(self):
+        """display a graphical representation of the damage level of the tank in game"""
         healthRect = pygame.Rect(self.rect.center[0]-40,self.rect.center[1]-50,80*self.__health/2,10)
         healthOutline = pygame.Rect(self.rect.center[0]-40,self.rect.center[1]-50,80,10)
         if self.__health == 2:
@@ -417,6 +496,7 @@ class Tank(pygame.sprite.Sprite):
         pygame.draw.rect(pygame.display.get_surface(),(0,0,0),healthOutline,1)
             
     def drawTankName(self):
+        """display a name label on the tank in game, name is set by player AI"""
         nameTxt = pygame.font.Font('freesansbold.ttf',15)
         text = str(players[self.player_number].lives)+' '+self.name+' '+str(players[self.player_number].kills)
         textSurf, textRect = text_objects(text, nameTxt, (0,0,0))
@@ -424,7 +504,7 @@ class Tank(pygame.sprite.Sprite):
         pygame.display.get_surface().blit(textSurf, textRect)
 
     def update(self):
-        """ tank update """
+        """per frame update of tank state"""
         self.drawTankName()
         
         # shot cooldown
@@ -476,10 +556,12 @@ class Tank(pygame.sprite.Sprite):
 
 
 def text_objects(text, font, txtColour):
+    """helper function to display text in game"""
     textSurface = font.render(text, True, txtColour)
     return textSurface, textSurface.get_rect()
 
 def message_display(text, txtColour, fntSize):
+    """function to display text in game"""
     largeText = pygame.font.Font('freesansbold.ttf',fntSize)
     TextSurf, TextRect = text_objects(str(text), largeText, txtColour)
     TextRect.center = (600,450)
@@ -487,6 +569,9 @@ def message_display(text, txtColour, fntSize):
     pygame.display.update()
 
 def set_up_level(maze_maps):
+    """function to set up game arena
+        takes: a list of lists, element one is a list of wall locations, element two a list of tank spawn locations
+        returns: the list of spawn locations for use in creating tanks"""
     maze_map = maze_maps[random.randint(0,len(maze_maps)-1)]
     for y in range(len(maze_map[0])):
         for x in range(len(maze_map[0][y])):
@@ -501,11 +586,13 @@ def set_up_level(maze_maps):
     return maze_map[1]
 
 def drawBackground(screen,background):
+    """draw the background tile onto the screen"""
     for b in range(1200//128):
         for c in range(900//128 + 3):
             screen.blit(background,(c*128,b*128))
 
 def countdown(count, screen, background):
+    """display a countdown on screen before game begins"""
     while count+1:
         start_time = pygame.time.get_ticks()
         for event in pygame.event.get():
