@@ -39,7 +39,7 @@ tournament = True
 # ******************************************************************************
 
 
-
+from math import atan2, degrees, pi
 import pygame, os, random, mapGen, importlib, enemy_AI, threading
 from pygame.locals import *
 
@@ -51,7 +51,6 @@ control_files = []
 def printOptions(options):
     for x in range(len(options)):
         print("{}) {}".format(x+1, options[x]))
-
 
 # this code dynamically loads the control files
 if tournament:
