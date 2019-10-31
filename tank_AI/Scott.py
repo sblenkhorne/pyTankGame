@@ -9,9 +9,9 @@ def action(my_tank):
         enemyDirection = getDirectionEnemy(my_tank.my_position(), enemyTanks[0])
         print("Enemy: " + str(enemyDirection) + " | My: " + str(my_tank.turret_direction()))
         dirDiff = abs(enemyDirection - my_tank.turret_direction())
-        if enemyDirection < my_tank.turret_direction():
+        if enemyDirection < my_tank.turret_direction() - 8:
             my_tank.rotate_left()
-        elif enemyDirection > my_tank.turret_direction():
+        elif enemyDirection > my_tank.turret_direction() + 8:
             my_tank.rotate_right()
         else:
             my_tank.fire()
