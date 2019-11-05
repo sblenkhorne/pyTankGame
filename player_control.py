@@ -1,52 +1,64 @@
-# A simple keyboard control for a tank including display of available information
+from math import atan2, degrees
+import random
 
-import pygame
-from pygame import *
-
+lastTurn = 0
 def action(my_tank):
-    pos = my_tank.my_position()
-    lvl = my_tank.my_AI_level()
-    heading = my_tank.my_heading()
-    tur = my_tank.turret_direction()
-    cool = my_tank.weapon_cooldown()
-    points = my_tank.checkSensors()
-    tanks = my_tank.enemy_tanks()
-    hit = my_tank.damaged()
-    key = pygame.key.get_pressed()
-    if key[K_a]:
-        my_tank.turn_left()
-    if key[K_d]:
-        my_tank.turn_right()
-    if key[K_w]:
+    my_tank.set_Name("Newb")
+    enemyTanks = my_tank.enemy_tanks()
+    my_tank.set_enemy_lvl(2)
+    if len(enemyTanks) > 0:
+        enemyDirection = getDirectionEnemy(my_tank.my_position(), enemyTanks[0])
+        print("Enemy: " + str(enemyDirection) + " | My: " + str(my_tank.turret_direction()))
+        dirDiff = abs(enemyDirection - my_tank.turret_direction())
+        if enemyDirection < my_tank.turret_direction() - 8:
+            my_tank.rotate_left()
+        elif enemyDirection > my_tank.turret_direction() + 8:
+            my_tank.rotate_right()
+        else:
+            my_tank.fire()
+    prox = my_tank.checkSensors()
+    if prox['f'] or prox['fl'] or prox['fr']:
+        if my_tank.my_heading() == 0:
+            if random.randint(1,2) ==1:
+                my_tank.turn_to(90)
+                lastTurn = 90
+            else:
+                my_tank.turn_to(270)
+                lastTurn = 270
+        elif my_tank.my_heading() == 90:
+            if random.randint(1,2) ==1:
+                my_tank.turn_to(0)
+                lastTurn = 0
+            else:
+                my_tank.turn_to(180)
+                lastTurn = 180
+        elif my_tank.my_heading() == 180:
+            if random.randint(1,2) ==1:
+                my_tank.turn_to(90)
+                lastTurn = 90
+            else:
+                my_tank.turn_to(270)
+                lastTurn = 270
+        elif my_tank.my_heading() == 270:
+            if random.randint(1,2) ==1:
+                my_tank.turn_to(180)
+                lastTurn = 180
+            else:
+                my_tank.turn_to(0)
+                lastTurn = 0
+    else:
         my_tank.forward()
-    if key[K_q]:
-        my_tank.rotate_left()
-    if key[K_e]:
-        my_tank.rotate_right()
-    if key[K_s]:
-        my_tank.reverse()
-    if key[K_1]:
-        my_tank.fire()
-    if key[K_0]:
-        print("my position",pos)
-        print("my AI level",lvl)
-        print("my heading",heading)
-        print("my turret aim",tur)
-        print("shot cooldown",cool)
-        print("Damaged?",hit)
-        print("tripped sensors:")
-        if points['n']: print("North")
-        if points['e']: print("East")
-        if points['s']: print("South")
-        if points['w']: print("West")
-        print("point sensors:")
-        if points['fl']: print("FL",end = ' ')
-        if points['f']: print("F",end = ' ')
-        if points['fr']: print("FR",end = ' ')
-        if points['r']: print("R",end = ' ')
-        if points['br']: print("BR",end = ' ')
-        if points['b']: print("B",end = ' ')
-        if points['bl']: print("BL",end = ' ')
-        if points['l']: print("L",end = ' ')
-        print()
-        print("Visible enemies:",tanks)
+    
+
+        
+
+def getDirectionEnemy(myPosition, enemy):
+    dx = enemy[0] - myPosition[0]
+    dy = enemy[1] - myPosition[1]
+    rads = atan2(-dy,dx)
+    degs = degrees(rads)
+    if degs <= 90:
+        degs = 90 - degs
+    elif degs > 90 and degs <= 180:
+        degs = 360 - (degs-90)
+    return degs
