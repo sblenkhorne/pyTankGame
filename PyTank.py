@@ -22,7 +22,8 @@
 # *********************** IMPORTANT SETUP INFORMATION *************************
 
 # set this to True for tournament play, shoud be False for student copies
-tournament = True
+tournament = False
+training = True
 
 # for practice:
 # student AI's must be in same folder as this PyTank.py and MUST have "control" in the filename, and be the only such file
@@ -68,13 +69,22 @@ if tournament:
     
     random.shuffle(players)
     for controller in players: control_files.append(importlib.import_module("tank_AI."+controller))
-
 else:
-    while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
-        num_players = int(input("Please enter number of players (2-4):"))
-    control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
-    for _ in range(num_players-1): control_files.append(enemy_AI)
-
+    if training:
+        valid=False
+        while not valid:
+            try:
+                challenge = int(input("Which challenge do you want to face? (1-4): "))
+                valid = True
+            except:
+                valid = False
+        num_players = 1
+        control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
+    else:
+        while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
+            num_players = int(input("Please enter number of players (2-4):"))
+        control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
+        for _ in range(num_players-1): control_files.append(enemy_AI)
 
 # Global sprite groups and other globals
 all_sprites = pygame.sprite.LayeredUpdates()
@@ -83,7 +93,6 @@ enviro_sprites = pygame.sprite.Group()
 tanks_sprites = pygame.sprite.Group()
 tank_colours = ['blue','green','orange','red']
 players = []
-
 
 def intersect(p1,p2,p3,p4):
     """tests for intersection of two line segments, caution does not work well with parallel line
@@ -133,6 +142,17 @@ def rotate_ip(self, angle):
     self.rect = new_image.get_rect(center=location)
     return new_image
 
+class Objective(pygame.sprite.Sprite):
+    """Class to represent map objectives """
+    def __init__(self, position):
+        """Objective class constructor
+            takes: the position of the objective (as a pair)
+        """
+        pygame.sprite.Sprite.__init__(self)
+        all_sprites.add(self, layer = 0)
+        self.image = pygame.Surface((position[0], position[1]))
+        self.image.fill((255,0,0))
+        self.rect = self.image.get_rect(topleft = (position[0], position[1]))
 
 class Wall(pygame.sprite.Sprite):
     """Class to represent obstacles"""
@@ -208,7 +228,7 @@ class Turret(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 1)
         image_file = colour + 'Turret.png'
-        self.base_image = load_image(image_file,50,50)
+        self.base_image = load_image(image_file,40,40)
         self.image = self.base_image
         self.rect = self.image.get_rect(center=tank.rect.center)
         self.heading = heading * 2
@@ -222,14 +242,15 @@ class Tank(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.colour = tank_colours[number]
         self.player_number = number
+        self.exit = False
         image_file = self.colour + 'Tank.png'
         self.tankFireSound = pygame.mixer.Sound("sounds/tankFire.wav")
         self.tankExplosion = pygame.mixer.Sound("sounds/tankExplosion.wav")
-        self.base_image = load_image(image_file,75,75)
+        self.base_image = load_image(image_file,50,50)
         self.image = self.base_image
-        self.rect = self.image.get_rect(center=spawns.pop(random.randint(0,len(spawns)-1)))
+        self.rect = self.image.get_rect(topleft=spawns.pop(random.randint(0,len(spawns)-1)))
         while pygame.sprite.spritecollideany(self, tanks_sprites, collided = pygame.sprite.collide_rect):
-            self.rect = self.image.get_rect(center=spawns.pop(random.randint(0,len(spawns)-1)))
+            self.rect = self.image.get_rect(topleft=spawns.pop(random.randint(0,len(spawns)-1)))
         tanks_sprites.add(self)
         self.speed = 10
         self.turn_rate = 5
@@ -250,7 +271,7 @@ class Tank(pygame.sprite.Sprite):
         self.frSensor = pygame.math.Vector2(45,-45)
         self.blSensor = pygame.math.Vector2(-45,45)
         self.brSensor = pygame.math.Vector2(45,45)
-        self.fSensor = pygame.math.Vector2(0,-50)
+        self.fSensor = pygame.math.Vector2(0,-43)
         self.rSensor = pygame.math.Vector2(50,0)
         self.bSensor = pygame.math.Vector2(0,50)
         self.lSensor = pygame.math.Vector2(-50,0)
@@ -521,6 +542,10 @@ class Tank(pygame.sprite.Sprite):
                     players[shots.index(shot_group)].kills += 1
                     self.kill()
                     break
+        for objective in objectives:
+            if pygame.sprite.spritecollideany(self, objective):
+                self.exit = True
+
         self.drawHealthBar()
         
         # execute turn and turret aim to target bearing
@@ -571,11 +596,16 @@ def set_up_level(maze_maps):
     """function to set up game arena
         takes: a list of lists, element one is a list of wall locations, element two a list of tank spawn locations
         returns: the list of spawn locations for use in creating tanks"""
-    maze_map = maze_maps[random.randint(0,len(maze_maps)-1)]
+    if len(maze_maps)>1:
+        maze_map = maze_maps[random.randint(0,len(maze_maps)-1)]
+    else:
+        maze_map = maze_maps[0]
     for y in range(len(maze_map[0])):
         for x in range(len(maze_map[0][y])):
             if maze_map[0][y][x]=="1":
                 Wall((x*60,y*60),False)
+            elif maze_map[0][y][x]=="2":
+                Objective((x*60, y*60))
     for t in range(20):
         Wall((t*60,-60))
         Wall((t*60,900))
@@ -614,7 +644,10 @@ def main():
     screen = pygame.display.set_mode((1200, 900))
     pygame.display.set_caption('PyTank')
     background = load_image('sand.png',128,128)
-    maze_maps = mapGen.getMaps()
+    if training:
+        maze_maps = mapGen.getMap(challenge)
+    else:
+        maze_maps = mapGen.getMaps()
     
     while True:
         # initial tank set-up
@@ -622,6 +655,7 @@ def main():
         all_sprites.empty()
         enviro_sprites.empty()
         tanks_sprites.empty()
+
         spawns = set_up_level(maze_maps)
         for i in range(num_players):
             players.append(Player(i))
@@ -629,7 +663,6 @@ def main():
 
         # onscreen countdown to game start
         if tournament: countdown(0, screen, background)
-
         # game loop
         while True:
             start_time = pygame.time.get_ticks()
@@ -637,11 +670,16 @@ def main():
                 if event.type == QUIT:
                     return
 
-            out_of_play = 0
-            for player in players:
-                if not player.alive:
-                    if player.respawn(spawns): out_of_play += 1
-            if out_of_play >= num_players - 1: break
+            if num_players > 1:
+                out_of_play = 0
+                for player in players:
+                    if not player.alive:
+                        if player.respawn(spawns): out_of_play += 1
+                if out_of_play >= num_players - 1: break
+            else:
+                if tanks_sprites.sprites()[0].exit:
+                    exitWin = True
+                    break
 
             drawBackground(screen,background)
             ts = []
@@ -661,6 +699,15 @@ def main():
 
         if tournament:
             win_string = tanks_sprites.sprites()[0].name + " is the winner!!"
+            while True:
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        return
+                drawBackground(screen,background)
+                # all_sprites.draw(screen)
+                message_display(win_string,(0,0,0),75)
+        else:
+            win_string = "You beat the Challenge!"
             while True:
                 for event in pygame.event.get():
                     if event.type == QUIT:

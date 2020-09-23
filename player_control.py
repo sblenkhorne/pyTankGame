@@ -1,51 +1,45 @@
 from math import atan2, degrees
-import random
+from random import randint
 
-lastTurn = 0
 def action(my_tank):
     my_tank.set_Name("Newb")
-    enemyTanks = my_tank.enemy_tanks()
-    my_tank.set_enemy_lvl(2)
-    if len(enemyTanks) > 0:
-        enemyDirection = getDirectionEnemy(my_tank.my_position(), enemyTanks[0])
-        print("Enemy: " + str(enemyDirection) + " | My: " + str(my_tank.turret_direction()))
-        dirDiff = abs(enemyDirection - my_tank.turret_direction())
-        if enemyDirection < my_tank.turret_direction() - 8:
-            my_tank.rotate_left()
-        elif enemyDirection > my_tank.turret_direction() + 8:
-            my_tank.rotate_right()
-        else:
-            my_tank.fire()
     prox = my_tank.checkSensors()
-    if prox['f'] or prox['fl'] or prox['fr']:
+    print(prox)
+    try:
+        turns
+    except:
+        turns = []
+    if prox['f']:
         if my_tank.my_heading() == 0:
-            if random.randint(1,2) ==1:
-                my_tank.turn_to(90)
-                lastTurn = 90
+            if prox['l']:
+                my_tank.lastTurn = 90
+                turns.append([my_tank.my_position(),90])
+            elif prox['r']:
+                my_tank.lastTurn = 270
             else:
-                my_tank.turn_to(270)
-                lastTurn = 270
+                my_tank.lastTurn = 90 if randint(1,2) == 1 else 270
         elif my_tank.my_heading() == 90:
-            if random.randint(1,2) ==1:
-                my_tank.turn_to(0)
-                lastTurn = 0
+            if prox['l']:
+                my_tank.lastTurn = 180
+            elif prox['r']:
+                my_tank.lastTurn = 0
             else:
-                my_tank.turn_to(180)
-                lastTurn = 180
+                my_tank.lastTurn = 0 if randint(1,2) == 1 else 180
         elif my_tank.my_heading() == 180:
-            if random.randint(1,2) ==1:
-                my_tank.turn_to(90)
-                lastTurn = 90
+            if prox['l']:
+                my_tank.lastTurn = 270
+            elif prox['r']:
+                my_tank.lastTurn = 90
             else:
-                my_tank.turn_to(270)
-                lastTurn = 270
+                my_tank.lastTurn = 90 if randint(1,2) == 1 else 270
         elif my_tank.my_heading() == 270:
-            if random.randint(1,2) ==1:
-                my_tank.turn_to(180)
-                lastTurn = 180
+            if prox['l']:
+                my_tank.lastTurn = 0
+            elif prox['r']:
+                my_tank.lastTurn = 180
             else:
-                my_tank.turn_to(0)
-                lastTurn = 0
+                my_tank.lastTurn = 0 if randint(1,2) == 1 else 180
+        my_tank.turn_to(my_tank.lastTurn)
     else:
         my_tank.forward()
     

@@ -31,6 +31,7 @@ def imageStuff(image):
     width, height = im.size
     mapTemp = ["" for x in range(height)]
     spawnPos =[]
+    objectives = []
     for y1 in range(height):
         for x1 in range(width):
             col = im.getpixel((x1,y1))
@@ -38,12 +39,17 @@ def imageStuff(image):
                 mapTemp[y1] += "0"
             elif col == (0,0,0):
                 mapTemp[y1] += "1"
-            else:
+            elif col == (0,255,0):
                 mapTemp[y1]+= "0"
                 spawnPos.append((x1*60, y1*60))
+            else:
+                mapTemp[y1] += "2"
     bit.append(mapTemp)
     bit.append(spawnPos)          
     return bit
+
+def getMap(challenge):
+    return [imageStuff("mapsTraining/Challenge"+str(challenge)+".png")]
 
 def getMaps():
     allMaps = []

@@ -67,7 +67,7 @@ As the commander you are able to determine some things about your environment.
 
 You have a GPS and compass which can pinpoint your tank using these commands:
 
-my_tank.my_position() - returns the x and y coordinates of your tank
+my_tank.my_position() - returns the x and y coordinates of your tank as a tuple
 my_tank.my_heading() - returns your tank heading in degrees (0 is north, 90 is east, 180 is south, 270 is west)
 my_tank.turret_direction() - returns the direction (in degrees) that your gun turret is pointed
 
