@@ -90,6 +90,7 @@ else:
 all_sprites = pygame.sprite.LayeredUpdates()
 shots = [pygame.sprite.Group(),pygame.sprite.Group(),pygame.sprite.Group(),pygame.sprite.Group()]
 enviro_sprites = pygame.sprite.Group()
+objectives = pygame.sprite.Group()
 tanks_sprites = pygame.sprite.Group()
 tank_colours = ['blue','green','orange','red']
 players = []
@@ -150,6 +151,7 @@ class Objective(pygame.sprite.Sprite):
         """
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 0)
+        objectives.add(self)
         self.image = pygame.Surface((position[0], position[1]))
         self.image.fill((255,0,0))
         self.rect = self.image.get_rect(topleft = (position[0], position[1]))
@@ -542,9 +544,8 @@ class Tank(pygame.sprite.Sprite):
                     players[shots.index(shot_group)].kills += 1
                     self.kill()
                     break
-        for objective in objectives:
-            if pygame.sprite.spritecollideany(self, objective):
-                self.exit = True
+        if pygame.sprite.spritecollideany(self, objectives):
+            self.exit = True
 
         self.drawHealthBar()
         
