@@ -80,6 +80,9 @@ else:
                 valid = False
         num_players = 1
         control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
+        print(control_files)
+        if challenge >2:
+            control_files.append(importlib.import_module('enemy_AI'))
     else:
         while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
             num_players = int(input("Please enter number of players (2-4):"))
@@ -152,8 +155,9 @@ class Objective(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         all_sprites.add(self, layer = 0)
         objectives.add(self)
-        self.image = pygame.Surface((position[0], position[1]))
-        self.image.fill((255,0,0))
+        image_file = 'objective.png'
+        self.base_image = load_image(image_file,60,60)
+        self.image = self.base_image
         self.rect = self.image.get_rect(topleft = (position[0], position[1]))
 
 class Wall(pygame.sprite.Sprite):
@@ -607,6 +611,10 @@ def set_up_level(maze_maps):
                 Wall((x*60,y*60),False)
             elif maze_map[0][y][x]=="2":
                 Objective((x*60, y*60))
+            elif maze_map[0][y][x] == "3":
+                players.append(Player(1))
+                print(maze_map[0][y][x])
+                Tank(1,[(x*60, y*60)])
     for t in range(20):
         Wall((t*60,-60))
         Wall((t*60,900))

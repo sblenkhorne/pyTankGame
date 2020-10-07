@@ -4,7 +4,7 @@ from random import randint
 def action(my_tank):
     my_tank.set_Name("Newb")
     prox = my_tank.checkSensors()
-    print(prox)
+    # print(prox)
     try:
         turns
     except:

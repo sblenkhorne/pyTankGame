@@ -42,6 +42,8 @@ def imageStuff(image):
             elif col == (0,255,0):
                 mapTemp[y1]+= "0"
                 spawnPos.append((x1*60, y1*60))
+            elif col == (0,0, 255):
+                mapTemp[y1]+= "3"
             else:
                 mapTemp[y1] += "2"
     bit.append(mapTemp)
@@ -55,5 +57,6 @@ def getMaps():
     allMaps = []
     for root, dirs, files in os.walk("mapsRaw"):
         for file in files:
-            allMaps.append(imageStuff("mapsRaw/"+file))
+            if file[-3:] == "png":
+                allMaps.append(imageStuff("mapsRaw/"+file))
     return allMaps
