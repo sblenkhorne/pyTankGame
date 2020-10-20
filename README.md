@@ -30,6 +30,8 @@ All other tanks are set to this level if more than 2 players
 3 - enemy tries to follow you; does not shoot
 4 - enemy tries to follow you and shoot you
 
+
+## Movement Commands
 You driver can be commanded to drive forwards or turn the tank using these commands:
 
 my_tank.forward() - moves the tank forward approximately 10 pixels in the heading direction
@@ -47,6 +49,7 @@ only one forward and one turn command can be issued each frame.  If multiple cal
 
 forward() and reverse() both return False if the movement could not be completed because of a collision.
 
+## Turret Control
 Your gunner can be commanded to rotate the gun turret or fire the gun using these commands:
 
 my_tank.fire() - fires a shell in the current turret direction.  Has an approximate two second cool down
@@ -63,6 +66,7 @@ only one fire and one rotate command can be issued each frame.  Multiple calls w
 
 If your tank is damaged movement is reduced to approximately 7 pixels, turn rate to 3 degrees and turret rotation to 2 degrees. If your tank is hit again it is destroyed.
 
+## Position Information Commands
 As the commander you are able to determine some things about your environment.  
 
 You have a GPS and compass which can pinpoint your tank using these commands:
@@ -71,6 +75,7 @@ my_tank.my_position() - returns the x and y coordinates of your tank as a tuple
 my_tank.my_heading() - returns your tank heading in degrees (0 is north, 90 is east, 180 is south, 270 is west)
 my_tank.turret_direction() - returns the direction (in degrees) that your gun turret is pointed
 
+## Sensors Commands
 You also have proximity sensors, which allow you to check whether there are any obstacles in your immediate area, using this command:
 my_tank.checkSensors() - returns a dictionary with keys 'n','s','e','w','fl','f','fr','r','br','b','bl','l'.  The values for these keys are True if there is a close wall or tank in that direction and False if not.
 - example: mySensors = my_tank.checkSensors() -> returns {'n':True,'s':False,'w':False,'e':False} #This means there is an obstacle to the immediate north of your tank.
