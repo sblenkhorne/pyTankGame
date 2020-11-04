@@ -74,9 +74,9 @@ else:
         valid=False
         while not valid:
             try:
-                challenge = int(input("Which challenge do you want to face? (1-3): "))
-                if challenge >4 or challenge<1:
-                    raise Exception("Please enter a number between 1 and 3")
+                challenge = int(input("Which challenge do you want to face? (1-5): "))
+                if challenge >5 or challenge<1:
+                    raise Exception("Please enter a number between 1 and 5")
                 valid = True
             except:
                 valid = False
