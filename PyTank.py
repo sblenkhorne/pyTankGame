@@ -651,7 +651,7 @@ def main():
     # initialization and setup
     pygame.init()
     pygame.mixer.pre_init(44100, 16, 2, 4096)
-    screen = pygame.display.set_mode((1200, 900), pygame.RESIZABLE)
+    screen = pygame.display.set_mode((1200, 900), pygame.SCALED)
     pygame.display.set_caption('PyTank')
     background = load_image('sand.png',128,128)
     if training:
