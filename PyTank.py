@@ -57,7 +57,10 @@ def printOptions(options):
 if tournament:
     controllers = [x[:-3] for x in os.listdir("tank_AI") if x.endswith("py")]
     while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
-        num_players = int(input("Please enter number of players (2-4):"))
+        try:
+            num_players = int(input("Please enter number of players (2-4):"))
+        except:
+            print("Please enter a number from 2 - 4")
     players = []
     while len(players) < num_players:
         printOptions(controllers)
@@ -83,7 +86,19 @@ else:
         num_players = 1
         control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
         if challenge >2:
-            control_files.append(importlib.import_module('enemy_AI'))
+            valid = False
+            num_players=0
+            while not valid:
+                try:
+                    numBots = int(input("How many enemies do you want to face? (1 - 3): "))
+                    for bot in range(numBots): 
+                        control_files.append(enemy_AI)
+                        num_players+=1
+                    valid = True
+                except:
+                    valid = False
+                    print("Please enter a number from 1 - 3")
+
     else:
         while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
             num_players = int(input("Please enter number of players (2-4):"))
@@ -643,7 +658,7 @@ def countdown(count, screen, background):
         message_display(count,(0,0,0),200)
         count -= 1
         pygame.display.flip()
-        timer = 20000000
+        timer = 10000000
         while timer: timer -= 1
 
 
@@ -672,7 +687,7 @@ def main():
             Tank(i,spawns[:])
 
         # onscreen countdown to game start
-        if tournament: countdown(0, screen, background)
+        if tournament: countdown(3, screen, background)
         # game loop
         while True:
             start_time = pygame.time.get_ticks()
