@@ -681,9 +681,11 @@ def main():
         tanks_sprites.empty()
 
         spawns = set_up_level(maze_maps)
-        for i in range(num_players):
+        i = 0
+        while len(players) < num_players:
             players.append(Player(i))
             Tank(i,spawns[:])
+            i+=1
 
         # onscreen countdown to game start
         if tournament: countdown(3, screen, background)
