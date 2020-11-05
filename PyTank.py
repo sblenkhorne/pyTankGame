@@ -87,7 +87,6 @@ else:
         control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
         if challenge >2:
             valid = False
-            num_players=0
             while not valid:
                 try:
                     numBots = int(input("How many enemies do you want to face? (1 - 3): "))
@@ -629,7 +628,7 @@ def set_up_level(maze_maps):
                 Objective((x*60, y*60))
             elif maze_map[0][y][x] == "3":
                 players.append(Player(1))
-                print(maze_map[0][y][x])
+                # print(maze_map[0][y][x])
                 Tank(1,[(x*60, y*60)])
     for t in range(20):
         Wall((t*60,-60))
