@@ -18,17 +18,17 @@ To run your program, simply open and run PyTank.py.
 Available Commands
 -----------------------------------------------------------------
 
-You can set the name of your tank that will be shown in the game by issuing the following command:  
+You can set the name of your tank that will be shown in the game by issuing the following command:
 my_tank.set_Name(yourName) - Where yourName is a string.
 
-You can set the level of difficulty for your enemy AI to practice against.  
+You can set the level of difficulty for your enemy AI to practice against.
 my_tank.set_enemy_lvl(1) - sets the enemy AI to the easiest level
 All other tanks are set to this level if more than 2 players
 
-1 - enemy just sits there; does not shoot  
-2 - enemy drives in a circle; does not shoot  
-3 - enemy navigates the map, but does not shoot  
-4 - enemy navigates the map and tries to shoot you  
+1 - enemy just sits there; does not shoot
+2 - enemy drives in a circle; does not shoot
+3 - enemy tries to follow you; does not shoot
+4 - enemy tries to follow you and shoot you
 
 
 ## Movement Commands
@@ -80,8 +80,7 @@ You also have proximity sensors, which allow you to check whether there are any 
 my_tank.checkSensors() - returns a dictionary with keys 'n','s','e','w','fl','f','fr','r','br','b','bl','l'.  The values for these keys are True if there is a close wall or tank in that direction and False if not.
 - example: mySensors = my_tank.checkSensors() -> returns {'n':True,'s':False,'w':False,'e':False} #This means there is an obstacle to the immediate north of your tank.
 
-You can determine the exact position of any visible enemy tanks by calling: 
-my_tank.enemy_tanks().  This returns a list of locations (eg [ ( 100,200 ) , ( 350,125 ) ] ) of all visible enemies. They are not listed in any order except that the closest is always the first one listed. If no enemies are visible an empty list is returned.
+You can determine the exact position of any visible enemy tanks by calling my_tank.enemy_tanks().  This returns a list of locations (eg [ ( 100,200 ) , ( 350,125 ) ] ) of all visible enemies. They are not listed in any order except that the closest is always the first one listed. If no enemies are visible an empty list is returned.
 
 There are two other functions you can use:
 my_tank.damaged() returns True if your tank has taken a hit
