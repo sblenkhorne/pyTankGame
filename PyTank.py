@@ -72,6 +72,7 @@ if tournament:
     
     random.shuffle(players)
     for controller in players: control_files.append(importlib.import_module("tank_AI."+controller))
+    enemies = 0
 else:
     if training:
         valid=False
@@ -90,9 +91,10 @@ else:
             while not valid:
                 try:
                     numBots = int(input("How many enemies do you want to face? (1 - 3): "))
+                    enemies = 0
                     for bot in range(numBots): 
                         control_files.append(enemy_AI)
-                        num_players+=1
+                        enemies+=1
                     valid = True
                 except:
                     valid = False
@@ -626,17 +628,16 @@ def set_up_level(maze_maps):
                 Wall((x*60,y*60),False)
             elif maze_map[0][y][x]=="2":
                 Objective((x*60, y*60))
-            elif maze_map[0][y][x] == "3":
-                players.append(Player(1))
-                # print(maze_map[0][y][x])
-                Tank(1,[(x*60, y*60)])
+            # elif maze_map[0][y][x] == "3":
+            #     players.append(Player(1))
+            #     Tank(1,[(x*60, y*60)])
     for t in range(20):
         Wall((t*60,-60))
         Wall((t*60,900))
     for w in range(15):
         Wall((-60,w*60))
         Wall((1200,w*60))
-    return maze_map[1]
+    return maze_map[1],maze_map[2]
 
 def drawBackground(screen,background):
     """draw the background tile onto the screen"""
@@ -680,11 +681,16 @@ def main():
         enviro_sprites.empty()
         tanks_sprites.empty()
 
-        spawns = set_up_level(maze_maps)
+        spawns, enemyPos = set_up_level(maze_maps)
         i = 0
         while len(players) < num_players:
             players.append(Player(i))
             Tank(i,spawns[:])
+            i+=1
+
+        for e in range(enemies):
+            players.append(Player(i))
+            Tank(i,enemyPos[:])
             i+=1
 
         # onscreen countdown to game start
@@ -696,12 +702,13 @@ def main():
                 if event.type == QUIT:
                     return
 
-            if num_players > 1:
+            if len(players)> 1:
                 out_of_play = 0
                 for player in players:
                     if not player.alive:
                         if player.respawn(spawns): out_of_play += 1
-                if out_of_play >= num_players - 1: break
+                if out_of_play >= (num_players + enemies) - 1: break
+                if training and not players[0].alive: break
             else:
                 if tanks_sprites.sprites()[0].exit:
                     exitWin = True
@@ -733,7 +740,10 @@ def main():
                 # all_sprites.draw(screen)
                 message_display(win_string,(0,0,0),75)
         else:
-            win_string = "You beat the Challenge!"
+            if (challenge > 2 and players[0].alive) or challenge<3:
+                win_string = "You beat the Challenge!"
+            else:
+                win_string = "DEFEAT! Try again!"
             while True:
                 for event in pygame.event.get():
                     if event.type == QUIT:
