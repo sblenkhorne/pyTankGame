@@ -710,6 +710,7 @@ def main():
             drawBackground(screen,background)
             ts = []
             for tank in tanks_sprites.sprites():
+                # tank.update()
                 t = threading.Thread(target = tank.update)
                 ts.append(t)
                 t.start()
