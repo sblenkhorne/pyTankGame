@@ -56,20 +56,48 @@ def printOptions(options):
 
 # this code dynamically loads the control files
 if tournament:
-    controllers = [x[:-3] for x in os.listdir("tank_AI") if x.endswith("py")]
-    while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
-        try:
-            num_players = int(input("Please enter number of players (2-4):"))
-        except:
-            print("Please enter a number from 2 - 4")
+    tournamentFiles = [x for x in os.listdir("tournamentFiles") if x.endswith("txt")]
     players = []
-    while len(players) < num_players:
-        printOptions(controllers)
-        try:
-            choice = int(input("Pick your next competitor: "))
-            players.append(controllers.pop(choice-1))
-        except:
-            print("That's not a valid choice.")
+    if len(tournamentFiles)>0:
+        loadFileName = "finals.txt"
+        loaded = False
+        while not loaded:
+            try:
+                printOptions(tournamentFiles)
+                games = int(input("Pick the tournament file you wish to load: "))
+                loadFile = open("tournamentFiles/" + tournamentFiles[games-1], 'r')
+                games = loadFile.readlines()
+                loaded = True
+            except:
+                input("No valid file found. Ensure there are text files in the tournamentFiles directory. Push ENTER to try again.")
+        gameChosen = False
+        numGames = len(games)
+        while not gameChosen:
+            try:
+                gameChosen = int(input("Which game do you want to run? (1-" + str(numGames) + ")? "))
+            except:
+                print("Not a valid option.")
+        game = games[gameChosen-1]
+        game.strip('\n')
+        playerFiles = game.split(';')[:-1]
+        num_players = len(playerFiles)
+        for p in playerFiles:
+            p.strip(";")
+            if len(p)>2: players.append(p)
+    else:
+        controllers = [x[:-3] for x in os.listdir("tank_AI") if x.endswith("py")]
+        while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
+            try:
+                num_players = int(input("Please enter number of players (2-4):"))
+            except:
+                print("Please enter a number from 2 - 4")
+        while len(players) < num_players:
+            printOptions(controllers)
+            try:
+                choice = int(input("Pick your next competitor: "))
+                players.append(controllers.pop(choice-1))
+            except:
+                print("That's not a valid choice.")
     random.shuffle(players)
     for controller in players: control_files.append(importlib.import_module("tank_AI."+controller))
 
@@ -641,32 +669,33 @@ def score_board(players, screen):
     bgSurface = pygame.Surface((board_width,board_height))
     boardBG = pygame.draw.rect(bgSurface, (255,255,255),bgSurface.get_rect(), 0, 7)
     boardBorder = pygame.draw.rect(bgSurface, (0,0,0),bgSurface.get_rect(), 5, 7)
-    cornerL, cornerT = boardBG.width - screen.get_width()//2, boardBG.height-screen.get_height()//2
+    cornerL, cornerT = screen.get_width()//2 - boardBG.width//2 , screen.get_height()//2-boardBG.height//2
     screen.blit(bgSurface, (cornerL, cornerT))
     titles = ["Player", "Kills", "Time Alive"]
     textObj = pygame.font.Font('freesansbold.ttf',30)
-    col, row, x_off, y_off = 0, 0, 150, 35
+    col, row, x_off, y_off = 0, 0, 220, 45
 
     for title in titles:
         TextSurf, TextRect = text_objects(title, textObj, (0,0,0))
-        TextRect.topleft = (cornerL + x_off*col + 10, cornerT + y_off*row + 10)
+        TextRect.topleft = (cornerL + x_off*col + 20, cornerT + y_off*row + 10)
         screen.blit(TextSurf, TextRect)
         col+=1
-
     row+=1
     col = 0
     for player in players:
         TextSurf, TextRect = text_objects(player.name, textObj, (0,0,0))
-        TextRect.topleft = (cornerL + x_off*col + 10, cornerT + y_off*row + 10)
+        TextRect.topleft = (cornerL + x_off*col + 20, cornerT + y_off*row + 10)
         screen.blit(TextSurf, TextRect)
         col+=1
         TextSurf, TextRect = text_objects(str(player.kills), textObj, (0,0,0))
-        TextRect.topleft = (cornerL + x_off*col + 10, cornerT + y_off*row + 10)
+        TextRect.topleft = (cornerL + x_off*col + 20, cornerT + y_off*row + 10)
         screen.blit(TextSurf, TextRect)
         col+=1
         TextSurf, TextRect = text_objects(str(round(player.timeAlive/1000,1)), textObj, (0,0,0))
-        TextRect.topleft = (cornerL + x_off*col + 10, cornerT + y_off*row + 10)
+        TextRect.topleft = (cornerL + x_off*col + 20, cornerT + y_off*row + 10)
         screen.blit(TextSurf, TextRect)
+        row+=1
+        col = 0
 
 def message_display(text, txtColour, fntSize, yValue):
     """function to display text in game"""
@@ -794,6 +823,9 @@ def main():
                 pygame.time.delay(25-frame_time)
             
         if tournament:
+            for player in players:
+                if player.alive:
+                    player.timeAlive = pygame.time.get_ticks()
             win_string = tanks_sprites.sprites()[0].name + " is the winner!!"
             while True:
                 for event in pygame.event.get():
