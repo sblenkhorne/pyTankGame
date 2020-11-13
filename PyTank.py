@@ -47,6 +47,7 @@ from pygame.locals import *
 # these must be above dynamic loading code
 random.seed()
 num_players = 0     # do NOT change this initial value - EVER!!!!
+enemies = 0
 control_files = []
 
 def printOptions(options):
@@ -69,10 +70,20 @@ if tournament:
             players.append(controllers.pop(choice-1))
         except:
             print("That's not a valid choice.")
-    
     random.shuffle(players)
     for controller in players: control_files.append(importlib.import_module("tank_AI."+controller))
-    enemies = 0
+
+    maze_maps = mapGen.getMaps()
+    
+    num_maps = len(maze_maps)
+    rand_choice = num_maps + 1
+    mapChoice = -1
+    while mapChoice<1 or mapChoice>num_maps+1:
+        try:
+            mapChoice = int(input("What map do you want (1-"+str(num_maps)+", or "+str(rand_choice)+" for random)?"))
+        except:
+            mapChoice = -1
+            print("Please enter a valid option")
 else:
     if training:
         valid=False
@@ -85,13 +96,13 @@ else:
             except:
                 valid = False
         num_players = 1
+        mapChoice = -1
         control_files.append(importlib.import_module([x[:-3] for x in os.listdir() if "control" in x][0]))
         if challenge >2:
             valid = False
             while not valid:
                 try:
                     numBots = int(input("How many enemies do you want to face? (1 - 3): "))
-                    enemies = 0
                     for bot in range(numBots): 
                         control_files.append(enemy_AI)
                         enemies+=1
@@ -99,6 +110,7 @@ else:
                 except:
                     valid = False
                     print("Please enter a number from 1 - 3")
+        maze_maps = mapGen.getMap(challenge)
 
     else:
         while num_players < 2 or num_players > 4:       # in practice mode the student decides how many enemies (all use same AI)
@@ -203,12 +215,15 @@ class Player():
         if tournament: self.lives = 2
         else: self.lives = 1
         self.kills = 0
+        self.timeAlive = 0
 
     def die(self):
         """method called to record the death of a tank belonging to this player"""
         self.alive = False
         self.respawn_timer = 60
         self.lives -= 1
+        if self.lives == 0:
+            self.timeAlive = pygame.time.get_ticks()
 
     def respawn(self,spawns):
         """method to instantiate a new tank for this player"""
@@ -345,6 +360,7 @@ class Tank(pygame.sprite.Sprite):
     def set_Name(self, newName):
         """sets the displayed name on the tank sprite in game"""
         self.name = newName
+        players[self.player_number].name = newName
     
     def damaged(self):
         """returns a boolean indicating if the tank has taken damage"""
@@ -606,22 +622,70 @@ def text_objects(text, font, txtColour):
     textSurface = font.render(text, True, txtColour)
     return textSurface, textSurface.get_rect()
 
-def message_display(text, txtColour, fntSize):
+def timer_update(timePast, screen):
+    timePast = round(timePast/1000,1)
+    textObj = pygame.font.Font('freesansbold.ttf',30)
+    TextSurf, TextRect = text_objects("Timer: " + str(timePast), textObj, (0,0,0))
+    timerBGwidth, timerBGheight = 195, 50
+    bgSurface = pygame.Surface((timerBGwidth,timerBGheight))
+    bgSurface.set_alpha(200)
+    pygame.draw.rect(bgSurface, (255,255,255),bgSurface.get_rect(), 0, 7)
+    pygame.draw.rect(bgSurface, (0,0,0),bgSurface.get_rect(), 5, 7)
+    screen.blit(bgSurface, (screen.get_width()-timerBGwidth-15,7))
+    TextRect.topleft = (screen.get_width()-timerBGwidth,20)
+    pygame.display.get_surface().blit(TextSurf, TextRect)
+    # pygame.display.update()
+
+def score_board(players, screen):
+    board_width, board_height = 700, 500
+    bgSurface = pygame.Surface((board_width,board_height))
+    boardBG = pygame.draw.rect(bgSurface, (255,255,255),bgSurface.get_rect(), 0, 7)
+    boardBorder = pygame.draw.rect(bgSurface, (0,0,0),bgSurface.get_rect(), 5, 7)
+    cornerL, cornerT = boardBG.width - screen.get_width()//2, boardBG.height-screen.get_height()//2
+    screen.blit(bgSurface, (cornerL, cornerT))
+    titles = ["Player", "Kills", "Time Alive"]
+    textObj = pygame.font.Font('freesansbold.ttf',30)
+    col, row, x_off, y_off = 0, 0, 150, 35
+
+    for title in titles:
+        TextSurf, TextRect = text_objects(title, textObj, (0,0,0))
+        TextRect.topleft = (cornerL + x_off*col + 10, cornerT + y_off*row + 10)
+        screen.blit(TextSurf, TextRect)
+        col+=1
+
+    row+=1
+    col = 0
+    for player in players:
+        TextSurf, TextRect = text_objects(player.name, textObj, (0,0,0))
+        TextRect.topleft = (cornerL + x_off*col + 10, cornerT + y_off*row + 10)
+        screen.blit(TextSurf, TextRect)
+        col+=1
+        TextSurf, TextRect = text_objects(str(player.kills), textObj, (0,0,0))
+        TextRect.topleft = (cornerL + x_off*col + 10, cornerT + y_off*row + 10)
+        screen.blit(TextSurf, TextRect)
+        col+=1
+        TextSurf, TextRect = text_objects(str(round(player.timeAlive/1000,1)), textObj, (0,0,0))
+        TextRect.topleft = (cornerL + x_off*col + 10, cornerT + y_off*row + 10)
+        screen.blit(TextSurf, TextRect)
+
+def message_display(text, txtColour, fntSize, yValue):
     """function to display text in game"""
     largeText = pygame.font.Font('freesansbold.ttf',fntSize)
     TextSurf, TextRect = text_objects(str(text), largeText, txtColour)
-    TextRect.center = (600,450)
+    TextRect.center = (600,yValue)
     pygame.display.get_surface().blit(TextSurf, TextRect)
-    pygame.display.update()
 
-def set_up_level(maze_maps):
+def set_up_level(maze_maps, mapChoice):
     """function to set up game arena
         takes: a list of lists, element one is a list of wall locations, element two a list of tank spawn locations
         returns: the list of spawn locations for use in creating tanks"""
-    if len(maze_maps)>1:
-        maze_map = maze_maps[random.randint(0,len(maze_maps)-1)]
+    if (tournament and mapChoice <= len(maze_maps)):
+        maze_map = maze_maps[mapChoice - 1]
     else:
-        maze_map = maze_maps[0]
+        if len(maze_maps)>1:
+            maze_map = maze_maps[random.randint(0,len(maze_maps)-1)]
+        else:
+            maze_map = maze_maps[0]
     for y in range(len(maze_map[0])):
         for x in range(len(maze_map[0][y])):
             if maze_map[0][y][x]=="1":
@@ -655,7 +719,7 @@ def countdown(count, screen, background):
         drawBackground(screen,background)
         tanks_sprites.draw(screen)
         all_sprites.draw(screen)
-        message_display(count,(0,0,0),200)
+        message_display(count,(0,0,0),200, 450)
         count -= 1
         pygame.display.flip()
         timer = 10000000
@@ -669,11 +733,8 @@ def main():
     screen = pygame.display.set_mode((1200, 900), pygame.RESIZABLE)
     pygame.display.set_caption('PyTank')
     background = load_image('sand.png',128,128)
-    if training:
-        maze_maps = mapGen.getMap(challenge)
-    else:
-        maze_maps = mapGen.getMaps()
     
+
     while True:
         # initial tank set-up
         players.clear()
@@ -681,7 +742,7 @@ def main():
         enviro_sprites.empty()
         tanks_sprites.empty()
 
-        spawns, enemyPos = set_up_level(maze_maps)
+        spawns, enemyPos = set_up_level(maze_maps, mapChoice)
         i = 0
         while len(players) < num_players:
             players.append(Player(i))
@@ -694,7 +755,7 @@ def main():
             i+=1
 
         # onscreen countdown to game start
-        if tournament: countdown(3, screen, background)
+        # if tournament: countdown(3, screen, background)
         # game loop
         while True:
             start_time = pygame.time.get_ticks()
@@ -706,7 +767,7 @@ def main():
                 out_of_play = 0
                 for player in players:
                     if not player.alive:
-                        if player.respawn(spawns): out_of_play += 1
+                        if player.respawn(spawns):  out_of_play += 1
                 if out_of_play >= (num_players + enemies) - 1: break
                 if training and not players[0].alive: break
             else:
@@ -725,12 +786,13 @@ def main():
             all_sprites.update()
             tanks_sprites.draw(screen)
             all_sprites.draw(screen)
+            timer_update(pygame.time.get_ticks(), screen)
             pygame.display.flip()
             
             frame_time = pygame.time.get_ticks() - start_time
             if frame_time < 25:
                 pygame.time.delay(25-frame_time)
-
+            
         if tournament:
             win_string = tanks_sprites.sprites()[0].name + " is the winner!!"
             while True:
@@ -739,8 +801,11 @@ def main():
                         return
                 drawBackground(screen,background)
                 # all_sprites.draw(screen)
-                message_display(win_string,(0,0,0),75)
+                message_display(win_string,(0,0,0),75, 50)
+                score_board(players,screen)
+                pygame.display.update()
         else:
+            finalTime = round(pygame.time.get_ticks() / 1000, 2)
             if (challenge > 2 and players[0].alive) or challenge<3:
                 win_string = "You beat the Challenge!"
             else:
@@ -751,7 +816,10 @@ def main():
                         return
                 drawBackground(screen,background)
                 # all_sprites.draw(screen)
-                message_display(win_string,(0,0,0),75)
+                message_display(win_string,(0,0,0),75, 450)
+                message_display(str(finalTime) + "secs", (0,0,0), 60, 550)
+                pygame.display.update()
+                
 
 
 if __name__ == '__main__': main()
